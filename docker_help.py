@@ -43,30 +43,26 @@ class service:
         return final
 
     def load_images() -> list:
-        images = []
-        final = []
-
         result = docker_help.run_command(service.command["get_images"])
 
-        for line in result.stdout.strip().splitlines():
-            images.append(json.loads(line))
+        if not result.stdout:
+            return []
 
-        for c in images:
-            final.append(
-                {
-                    "Containers": c["Containers"],
-                    "Created At": c["CreatedAt"],
-                    "Created Since": c["CreatedSince"],
-                    "Digest": c["Digest"],
-                    "ID": c["ID"],
-                    "Shared Size": c["SharedSize"],
-                    "Size": c["Size"],
-                    "Tag": c["Tag"],
-                    "UniqueSize": c["UniqueSize"],
-                }
-            )
+        return [
+            {
+                "Containers": img["Containers"],
+                "Created At": img["CreatedAt"],
+                "Created Since": img["CreatedSince"],
+                "Digest": img["Digest"],
+                "ID": img["ID"],
+                "Shared Size": img["SharedSize"],
+                "Size": img["Size"],
+                "Tag": img["Tag"],
+                "UniqueSize": img["UniqueSize"],
+            }
+            for img in map(json.loads, result.stdout.splitlines())
+        ]
 
-        return final
 
     def container_logs(container_id: str, timestamps: bool, tail: int):
         cmd = ["docker", "logs"]
