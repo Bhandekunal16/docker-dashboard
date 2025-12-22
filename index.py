@@ -41,14 +41,14 @@ def load_images():
 
 @app.route("/stop/container", methods=["POST"])
 def stop_container():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
+    container_id = data.get("containerId")
 
-    if not data or "containerId" not in data:
+    if not container_id:
         return jsonify({"error": "containerId is required"}), 400
 
-    containerId = data["containerId"]
+    return service.stop_container(container_id)
 
-    return service.stop_container(containerId)
 
 
 @app.route("/remove/container", methods=["POST"])
