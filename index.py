@@ -51,18 +51,7 @@ def stop_container():
 
     containerId = data["containerId"]
 
-    result = docker_help.run_command(["docker", "stop", f"{containerId}"])
-
-    return (
-        jsonify(
-            {
-                "message": "Container stopped successfully",
-                "containerId": containerId,
-                "output": result.stdout.strip(),
-            }
-        ),
-        200,
-    )
+    return service.stop_container(containerId)
 
 
 @app.route("/remove/container", methods=["POST"])
@@ -74,18 +63,7 @@ def remove_container():
 
     containerId = data["containerId"]
 
-    result = docker_help.run_command(["docker", "rm", f"{containerId}"])
-
-    return (
-        jsonify(
-            {
-                "message": "Container stopped successfully",
-                "containerId": containerId,
-                "output": result.stdout.strip(),
-            }
-        ),
-        200,
-    )
+    return service.remove_container(containerId)
 
 
 if __name__ == "__main__":

@@ -88,3 +88,31 @@ class service:
                 ),
                 500,
             )
+
+    def stop_container(containerId):
+        result = docker_help.run_command(["docker", "stop", f"{containerId}"])
+
+        return (
+            jsonify(
+                {
+                    "message": "Container stopped successfully",
+                    "containerId": containerId,
+                    "output": result.stdout.strip(),
+                }
+            ),
+            200,
+        )
+        
+    def remove_container(containerId):
+        result = docker_help.run_command(["docker", "rm", f"{containerId}"])
+
+        return (
+            jsonify(
+                {
+                    "message": "Container stopped successfully",
+                    "containerId": containerId,
+                    "output": result.stdout.strip(),
+                }
+            ),
+            200,
+        )
