@@ -2,7 +2,7 @@ import subprocess
 import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from docker_help import docker_help, loader
+from docker_help import docker_help, loader, service
 
 app = Flask(__name__)
 
@@ -29,77 +29,17 @@ def container_logs():
     tail = data.get("tail", 200)
     timestamps = data.get("timestamps", False)
 
-    cmd = ["docker", "logs"]
-
-    if timestamps:
-        cmd.append("--timestamps")
-
-    cmd.extend(["--tail", str(tail), container_id])
-
-    try:
-        result = docker_help.run_command(cmd)
-
-        return jsonify({"containerId": container_id, "logs": result.stdout}), 200
-
-    except subprocess.CalledProcessError as e:
-        return (
-            jsonify(
-                {"error": "Failed to fetch container logs", "details": e.stderr.strip()}
-            ),
-            500,
-        )
+    return service.container_logs(container_id, timestamps, tail)
 
 
 @app.route("/get/all/containers")
 def load_containers():
-    containers = []
-    final = []
-
-    result = docker_help.run_command(command["get_containers"])
-
-    for line in result.stdout.strip().splitlines():
-        containers.append(json.loads(line))
-
-    for c in containers:
-        final.append(
-            {
-                "container_id": c["ID"],
-                "image": c["Image"],
-                "status": c["Status"],
-                "ports": c["Ports"],
-                "name": c["Names"],
-            }
-        )
-
-    return final
+    return service.load_containers()
 
 
 @app.route("/get/all/images")
 def load_images():
-    images = []
-    final = []
-
-    result = docker_help.run_command(command["get_images"])
-
-    for line in result.stdout.strip().splitlines():
-        images.append(json.loads(line))
-
-    for c in images:
-        final.append(
-            {
-                "Containers": c["Containers"],
-                "Created At": c["CreatedAt"],
-                "Created Since": c["CreatedSince"],
-                "Digest": c["Digest"],
-                "ID": c["ID"],
-                "Shared Size": c["SharedSize"],
-                "Size": c["Size"],
-                "Tag": c["Tag"],
-                "UniqueSize": c["UniqueSize"],
-            }
-        )
-
-    return final
+    return service.load_images()
 
 
 @app.route("/stop/container", methods=["POST"])
