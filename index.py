@@ -17,16 +17,17 @@ def ui():
 
 @app.route("/logs/container", methods=["POST"])
 def container_logs():
-    data = request.get_json()
-
-    if not data or "containerId" not in data:
+    data = request.get_json(silent=True) or {}
+    container_id = data.get("containerId")
+    if not container_id:
         return jsonify({"error": "containerId is required"}), 400
 
-    container_id = data["containerId"]
-    tail = data.get("tail", 200)
-    timestamps = data.get("timestamps", False)
+    return service.container_logs(
+        container_id,
+        data.get("timestamps", False),
+        data.get("tail", 200),
+    )
 
-    return service.container_logs(container_id, timestamps, tail)
 
 
 @app.route("/get/all/containers")
