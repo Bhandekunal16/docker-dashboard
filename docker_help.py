@@ -1,5 +1,6 @@
 import subprocess
 import json
+from typing import Any
 from flask import jsonify
 
 
@@ -13,7 +14,7 @@ class loader:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def json_response(obj: object, res_code: int):
+    def json_response(obj: object, res_code: int)-> tuple[Any, int]:
         return (jsonify(obj), res_code)
 
 
