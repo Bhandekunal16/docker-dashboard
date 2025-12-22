@@ -1,0 +1,5 @@
+{
+  "logs": ["docker", "logs"],
+  "get_containers": ["docker", "ps", "-a", "--format", "{{json .}}"],
+  "get_images": ["docker", "images", "--format", "{{json .}}"]
+}

@@ -10,6 +10,9 @@ app = Flask(__name__)
 with open("./file.config.json", "r", encoding="utf-8") as f:
     frontend = json.load(f)
 
+with open("./command.config.json", "r", encoding="utf-8") as f:
+    command = json.load(f)
+
 CORS(app)
 
 
@@ -28,8 +31,8 @@ def container_logs():
     container_id = data["containerId"]
     tail = data.get("tail", 200)
     timestamps = data.get("timestamps", False)
-
-    cmd = ["docker", "logs"]
+    
+    cmd = command['logs']
 
     if timestamps:
         cmd.append("--timestamps")
@@ -55,7 +58,7 @@ def load_containers():
     containers = []
     final = []
     
-    result = docker_help.run_command(["docker", "ps", "-a", "--format", "{{json .}}"])
+    result = docker_help.run_command(command['get_containers'])
 
     for line in result.stdout.strip().splitlines():
         containers.append(json.loads(line))
@@ -79,7 +82,7 @@ def load_images():
     images = []
     final = []
 
-    result = docker_help.run_command(["docker", "images", "--format", "{{json .}}"])
+    result = docker_help.run_command(command['get_images'])
 
     for line in result.stdout.strip().splitlines():
         images.append(json.loads(line))
