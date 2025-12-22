@@ -3,6 +3,8 @@ import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
+from docker_help import docker_help
+
 app = Flask(__name__)
 
 with open("./file.config.json", "r", encoding="utf-8") as f:
@@ -13,7 +15,7 @@ CORS(app)
 
 @app.route("/")
 def ui():
-    return send_from_directory(frontend['directory'], frontend['file'])
+    return send_from_directory(frontend["directory"], frontend["file"])
 
 
 @app.route("/logs/container", methods=["POST"])
@@ -35,7 +37,7 @@ def container_logs():
     cmd.extend(["--tail", str(tail), container_id])
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = docker_help.run_command(cmd)
 
         return jsonify({"containerId": container_id, "logs": result.stdout}), 200
 
@@ -52,13 +54,8 @@ def container_logs():
 def load_containers():
     containers = []
     final = []
-
-    result = subprocess.run(
-        ["docker", "ps", "-a", "--format", "{{json .}}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    
+    result = docker_help.run_command(["docker", "ps", "-a", "--format", "{{json .}}"])
 
     for line in result.stdout.strip().splitlines():
         containers.append(json.loads(line))
@@ -82,12 +79,7 @@ def load_images():
     images = []
     final = []
 
-    result = subprocess.run(
-        ["docker", "images", "--format", "{{json .}}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    result = docker_help.run_command(["docker", "images", "--format", "{{json .}}"])
 
     for line in result.stdout.strip().splitlines():
         images.append(json.loads(line))
@@ -118,13 +110,8 @@ def stop_container():
         return jsonify({"error": "containerId is required"}), 400
 
     containerId = data["containerId"]
-
-    result = subprocess.run(
-        ["docker", "stop", f"{containerId}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    
+    result = docker_help.run_command(["docker", "stop", f"{containerId}"])
 
     return (
         jsonify(
@@ -146,13 +133,8 @@ def remove_container():
         return jsonify({"error": "containerId is required"}), 400
 
     containerId = data["containerId"]
-
-    result = subprocess.run(
-        ["docker", "rm", f"{containerId}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    
+    result = docker_help.run_command(["docker", "rm", f"{containerId}"])
 
     return (
         jsonify(
@@ -167,4 +149,4 @@ def remove_container():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
