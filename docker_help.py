@@ -13,6 +13,9 @@ class loader:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
+    def json_response(obj: object, res_code: int):
+        return (jsonify(obj), res_code)
+
 
 class service:
     command = loader.load_json("./command.config.json")
@@ -65,7 +68,7 @@ class service:
 
         return final
 
-    def container_logs(container_id: str, timestamps : bool, tail: int):
+    def container_logs(container_id: str, timestamps: bool, tail: int):
         cmd = ["docker", "logs"]
 
         if timestamps:
@@ -75,44 +78,37 @@ class service:
 
         try:
             result = docker_help.run_command(cmd)
-
-            return jsonify({"containerId": container_id, "logs": result.stdout}), 200
+            return loader.json_response(
+                {"containerId": container_id, "logs": result.stdout}, 200
+            )
 
         except subprocess.CalledProcessError as e:
-            return (
-                jsonify(
-                    {
-                        "error": "Failed to fetch container logs",
-                        "details": e.stderr.strip(),
-                    }
-                ),
+            return loader.json_response(
+                {
+                    "error": "Failed to fetch container logs",
+                    "details": e.stderr.strip(),
+                },
                 500,
             )
 
     def stop_container(containerId: str):
         result = docker_help.run_command(["docker", "stop", f"{containerId}"])
-
-        return (
-            jsonify(
-                {
-                    "message": "Container stopped successfully",
-                    "containerId": containerId,
-                    "output": result.stdout.strip(),
-                }
-            ),
+        return loader.json_response(
+            {
+                "message": "Container stopped successfully",
+                "containerId": containerId,
+                "output": result.stdout.strip(),
+            },
             200,
         )
-        
+
     def remove_container(containerId: str):
         result = docker_help.run_command(["docker", "rm", f"{containerId}"])
-
-        return (
-            jsonify(
-                {
-                    "message": "Container stopped successfully",
-                    "containerId": containerId,
-                    "output": result.stdout.strip(),
-                }
-            ),
+        return loader.json_response(
+            {
+                "message": "Container stopped successfully",
+                "containerId": containerId,
+                "output": result.stdout.strip(),
+            },
             200,
         )
