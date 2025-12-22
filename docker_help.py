@@ -4,12 +4,12 @@ from flask import jsonify
 
 
 class docker_help:
-    def run_command(cmd):
+    def run_command(cmd: list):
         return subprocess.run(cmd, capture_output=True, text=True, check=True)
 
 
 class loader:
-    def load_json(path):
+    def load_json(path: str):
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
