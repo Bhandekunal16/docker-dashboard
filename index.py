@@ -11,6 +11,9 @@ with open("./file.config.json", "r", encoding="utf-8") as f:
 
 with open("./command.config.json", "r", encoding="utf-8") as f:
     command = json.load(f)
+    
+with open("./application.config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
 
 CORS(app)
 
@@ -31,7 +34,7 @@ def container_logs():
     tail = data.get("tail", 200)
     timestamps = data.get("timestamps", False)
     
-    cmd = command['logs']
+    cmd = ["docker", "logs"]
 
     if timestamps:
         cmd.append("--timestamps")
@@ -39,6 +42,7 @@ def container_logs():
     cmd.extend(["--tail", str(tail), container_id])
 
     try:
+        print(cmd)
         result = docker_help.run_command(cmd)
 
         return jsonify({"containerId": container_id, "logs": result.stdout}), 200
@@ -151,4 +155,4 @@ def remove_container():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host=config['host'], port=config['port'], debug=True)
