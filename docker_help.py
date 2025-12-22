@@ -4,7 +4,7 @@ from flask import jsonify
 
 
 class docker_help:
-    def run_command(cmd: list):
+    def run_command(cmd: list) -> subprocess.CompletedProcess[str]:
         return subprocess.run(cmd, capture_output=True, text=True, check=True)
 
 
@@ -39,7 +39,7 @@ class service:
 
         return final
 
-    def load_images():
+    def load_images() -> list:
         images = []
         final = []
 
@@ -65,7 +65,7 @@ class service:
 
         return final
 
-    def container_logs(container_id, timestamps, tail):
+    def container_logs(container_id: str, timestamps : bool, tail: int):
         cmd = ["docker", "logs"]
 
         if timestamps:
@@ -89,7 +89,7 @@ class service:
                 500,
             )
 
-    def stop_container(containerId):
+    def stop_container(containerId: str):
         result = docker_help.run_command(["docker", "stop", f"{containerId}"])
 
         return (
@@ -103,7 +103,7 @@ class service:
             200,
         )
         
-    def remove_container(containerId):
+    def remove_container(containerId: str):
         result = docker_help.run_command(["docker", "rm", f"{containerId}"])
 
         return (
