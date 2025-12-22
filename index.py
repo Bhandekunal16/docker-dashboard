@@ -53,14 +53,14 @@ def stop_container():
 
 @app.route("/remove/container", methods=["POST"])
 def remove_container():
-    data = request.get_json()
+    data = request.get_json(silent=True)
 
-    if not data or "containerId" not in data:
+    container_id = data.get("containerId") if data else None
+    if not container_id:
         return jsonify({"error": "containerId is required"}), 400
 
-    containerId = data["containerId"]
+    return service.remove_container(container_id)
 
-    return service.remove_container(containerId)
 
 
 if __name__ == "__main__":
