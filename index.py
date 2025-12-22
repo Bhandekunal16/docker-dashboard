@@ -2,18 +2,13 @@ import subprocess
 import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from docker_help import docker_help
+from docker_help import docker_help, loader
 
 app = Flask(__name__)
 
-with open("./file.config.json", "r", encoding="utf-8") as f:
-    frontend = json.load(f)
-
-with open("./command.config.json", "r", encoding="utf-8") as f:
-    command = json.load(f)
-    
-with open("./application.config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+frontend = loader.load_json("./file.config.json")
+command = loader.load_json("./command.config.json")
+config = loader.load_json("./application.config.json")
 
 CORS(app)
 
@@ -33,7 +28,7 @@ def container_logs():
     container_id = data["containerId"]
     tail = data.get("tail", 200)
     timestamps = data.get("timestamps", False)
-    
+
     cmd = ["docker", "logs"]
 
     if timestamps:
@@ -59,8 +54,8 @@ def container_logs():
 def load_containers():
     containers = []
     final = []
-    
-    result = docker_help.run_command(command['get_containers'])
+
+    result = docker_help.run_command(command["get_containers"])
 
     for line in result.stdout.strip().splitlines():
         containers.append(json.loads(line))
@@ -84,7 +79,7 @@ def load_images():
     images = []
     final = []
 
-    result = docker_help.run_command(command['get_images'])
+    result = docker_help.run_command(command["get_images"])
 
     for line in result.stdout.strip().splitlines():
         images.append(json.loads(line))
@@ -115,7 +110,7 @@ def stop_container():
         return jsonify({"error": "containerId is required"}), 400
 
     containerId = data["containerId"]
-    
+
     result = docker_help.run_command(["docker", "stop", f"{containerId}"])
 
     return (
@@ -138,7 +133,7 @@ def remove_container():
         return jsonify({"error": "containerId is required"}), 400
 
     containerId = data["containerId"]
-    
+
     result = docker_help.run_command(["docker", "rm", f"{containerId}"])
 
     return (
@@ -154,4 +149,4 @@ def remove_container():
 
 
 if __name__ == "__main__":
-    app.run(host=config['host'], port=config['port'], debug=True)
+    app.run(host=config["host"], port=config["port"], debug=True)
