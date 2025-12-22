@@ -17,7 +17,7 @@ class loader:
 class service:
     command = loader.load_json("./command.config.json")
 
-    def load_containers():
+    def load_containers() -> list:
         containers = []
         final = []
 
