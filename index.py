@@ -42,7 +42,6 @@ def container_logs():
     cmd.extend(["--tail", str(tail), container_id])
 
     try:
-        print(cmd)
         result = docker_help.run_command(cmd)
 
         return jsonify({"containerId": container_id, "logs": result.stdout}), 200
