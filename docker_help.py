@@ -21,26 +21,22 @@ class service:
     command = loader.load_json("./command.config.json")
 
     def load_containers() -> list:
-        containers = []
-        final = []
-
         result = docker_help.run_command(service.command["get_containers"])
 
-        for line in result.stdout.strip().splitlines():
-            containers.append(json.loads(line))
+        if not result.stdout:
+            return []
 
-        for c in containers:
-            final.append(
-                {
-                    "container_id": c["ID"],
-                    "image": c["Image"],
-                    "status": c["Status"],
-                    "ports": c["Ports"],
-                    "name": c["Names"],
-                }
-            )
+        return [
+            {
+                "container_id": c["ID"],
+                "image": c["Image"],
+                "status": c["Status"],
+                "ports": c["Ports"],
+                "name": c["Names"],
+            }
+            for c in map(json.loads, result.stdout.splitlines())
+        ]
 
-        return final
 
     def load_images() -> list:
         result = docker_help.run_command(service.command["get_images"])
