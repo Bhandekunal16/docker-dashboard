@@ -1,7 +1,6 @@
 import subprocess
 import json
-from typing import Any
-from flask import jsonify
+from flask import jsonify, Response
 
 
 class docker_help:
@@ -14,7 +13,7 @@ class loader:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def json_response(obj: object, res_code: int)-> tuple[Any, int]:
+    def json_response(obj: object, res_code: int) -> tuple[Response, int]:
         return (jsonify(obj), res_code)
 
 
