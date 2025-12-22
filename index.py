@@ -5,12 +5,15 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
+with open("./file.config.json", "r", encoding="utf-8") as f:
+    frontend = json.load(f)
+
 CORS(app)
 
 
 @app.route("/")
 def ui():
-    return send_from_directory("frontend", "index.html")
+    return send_from_directory(frontend['directory'], frontend['file'])
 
 
 @app.route("/logs/container", methods=["POST"])
