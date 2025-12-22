@@ -4,10 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Docker Manager | Dashboard</title>
+
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+
     <style>
       :root {
         --primary: #00b4d8;
@@ -26,7 +28,6 @@
         --radius: 12px;
         --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
           0 2px 4px -1px rgba(0, 0, 0, 0.2);
-        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       * {
@@ -126,10 +127,20 @@
         background: transparent;
         color: var(--text-primary);
         cursor: pointer;
+        margin-right: 6px;
       }
 
       .btn:hover {
         background: var(--surface-light);
+      }
+
+      .btn-danger {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.15);
       }
 
       .logs-box {
@@ -152,7 +163,7 @@
   </head>
 
   <body>
-    <header>
+    <header style="margin-bottom: 1%;">
       <div class="container header-content">
         <h1><i class="fas fa-ship"></i> Docker Manager</h1>
         <button class="btn" onclick="loadAll()">Reload</button>
@@ -160,6 +171,7 @@
     </header>
 
     <main class="container">
+      <!-- CONTAINERS -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-box"></i> Containers</h2>
@@ -173,7 +185,7 @@
                 <th>Name</th>
                 <th>Image</th>
                 <th>Status</th>
-                <th>Logs</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="containerTable"></tbody>
@@ -203,18 +215,17 @@
         </div>
       </section>
 
+      <!-- LOGS -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-terminal"></i> Logs</h2>
           <span id="logTitle">No container selected</span>
         </div>
-        <div class="logs-box" id="logsBox">
-          Select a container to view logs
-        </div>
+        <div class="logs-box" id="logsBox">Select a container to view logs</div>
       </section>
     </main>
 
-    <footer>Docker Manager © 2024</footer>
+    <footer style="margin-top: 1%;">Docker Manager © 2024</footer>
 
     <script>
       const API = "http://0.0.0.0:5000";
@@ -226,19 +237,33 @@
         table.innerHTML = "";
 
         data.forEach((c) => {
+          const isRunning = c.status.includes("Up");
+
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td><span class="container-id">${c.container_id.slice(0,12)}</span></td>
+            <td><span class="container-id">${c.container_id.slice(
+              0,
+              12
+            )}</span></td>
             <td>${c.name}</td>
             <td>${c.image}</td>
-            <td class="${
-              c.status.includes("Up") ? "status-running" : "status-exited"
-            }">${c.status}</td>
+            <td class="${isRunning ? "status-running" : "status-exited"}">
+              ${c.status}
+            </td>
             <td>
-              <button class="btn" onclick="loadLogs('${c.container_id}','${c.name}')">
-                Logs
-              </button>
-            </td>`;
+              <button class="btn" onclick="loadLogs('${c.container_id}','${
+            c.name
+          }')">Logs</button>
+              ${
+                isRunning
+                  ? `<button class="btn" onclick="stopContainer('${c.container_id}')">Stop</button>`
+                  : ""
+              }
+              <button class="btn btn-danger" onclick="removeContainer('${
+                c.container_id
+              }')">Remove</button>
+            </td>
+          `;
           table.appendChild(tr);
         });
       }
@@ -254,24 +279,54 @@
           tr.innerHTML = `
             <td>${i.Tag || "<none>"}</td>
             <td>${i.Tag || "<none>"}</td>
-            <td><span class="container-id">${i.ID.slice(7,19)}</span></td>
+            <td><span class="container-id">${i.ID.slice(7, 19)}</span></td>
             <td>${i.Size}</td>
-            <td>${i.Containers}</td>`;
+            <td>${i.Containers}</td>
+          `;
           table.appendChild(tr);
         });
       }
 
       async function loadLogs(id, name) {
         document.getElementById("logTitle").textContent = name;
+
         const res = await fetch(`${API}/logs/container`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ containerId: id, tail: 200, timestamps: true }),
+          body: JSON.stringify({
+            containerId: id,
+            tail: 200,
+            timestamps: true,
+          }),
         });
 
         const data = await res.json();
         document.getElementById("logsBox").textContent =
           data.logs || "No logs available";
+      }
+
+      async function stopContainer(id) {
+        if (!confirm("Stop this container?")) return;
+
+        await fetch(`${API}/stop/container`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+
+        loadContainers();
+      }
+
+      async function removeContainer(id) {
+        if (!confirm("Remove this container? This cannot be undone.")) return;
+
+        await fetch(`${API}/remove/container`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+
+        loadContainers();
       }
 
       function loadAll() {
