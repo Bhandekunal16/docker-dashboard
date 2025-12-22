@@ -60,6 +60,26 @@ def remove_container():
 
     return service.remove_container(container_id)
 
+@app.route("/restart/container", methods=["POST"])
+def restart_container():
+    data = request.get_json(silent=True)
+
+    container_id = data.get("containerId") if data else None
+    if not container_id:
+        return jsonify({"error": "containerId is required"}), 400
+
+    return service.restart_container(container_id)
+
+@app.route("/start/container", methods=["POST"])
+def start_container():
+    data = request.get_json(silent=True)
+
+    container_id = data.get("containerId") if data else None
+    if not container_id:
+        return jsonify({"error": "containerId is required"}), 400
+
+    return service.start_container(container_id)
+
 
 if __name__ == "__main__":
     app.run(host=config["host"], port=config["port"], debug=True)

@@ -93,6 +93,29 @@ class service:
             },
             200,
         )
+        
+    def restart_container(containerId: str):
+        result = docker_help.run_command(["docker", "restart", f"{containerId}"])
+        return loader.json_response(
+            {
+                "message": "Container restarted successfully",
+                "containerId": containerId,
+                "output": result.stdout.strip(),
+            },
+            200,
+        )
+        
+    def start_container(containerId: str):
+        result = docker_help.run_command(["docker", "start", f"{containerId}"])
+        return loader.json_response(
+            {
+                "message": "Container restarted successfully",
+                "containerId": containerId,
+                "output": result.stdout.strip(),
+            },
+            200,
+        )
+
 
     def remove_container(containerId: str):
         result = docker_help.run_command(["docker", "rm", f"{containerId}"])

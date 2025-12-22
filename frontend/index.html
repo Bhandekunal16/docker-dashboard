@@ -23,11 +23,8 @@
         --success: #10b981;
         --warning: #f59e0b;
         --danger: #ef4444;
-        --info: #3b82f6;
         --border: #475569;
         --radius: 12px;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
-          0 2px 4px -1px rgba(0, 0, 0, 0.2);
       }
 
       * {
@@ -83,13 +80,12 @@
       td {
         padding: 14px;
         border-bottom: 1px solid var(--border);
-        text-align: left;
       }
 
       th {
         background: var(--surface-light);
-        text-transform: uppercase;
         font-size: 12px;
+        text-transform: uppercase;
         color: var(--text-secondary);
       }
 
@@ -163,7 +159,7 @@
   </head>
 
   <body>
-    <header style="margin-bottom: 1%;">
+    <header>
       <div class="container header-content">
         <h1><i class="fas fa-ship"></i> Docker Manager</h1>
         <button class="btn" onclick="loadAll()">Reload</button>
@@ -225,7 +221,7 @@
       </section>
     </main>
 
-    <footer style="margin-top: 1%;">Docker Manager © 2024</footer>
+    <footer>Docker Manager © 2024</footer>
 
     <script>
       const API = "http://0.0.0.0:5000";
@@ -241,27 +237,27 @@
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td><span class="container-id">${c.container_id.slice(
-              0,
-              12
-            )}</span></td>
+            <td><span class="container-id">${c.container_id.slice(0, 12)}</span></td>
             <td>${c.name}</td>
             <td>${c.image}</td>
             <td class="${isRunning ? "status-running" : "status-exited"}">
               ${c.status}
             </td>
             <td>
-              <button class="btn" onclick="loadLogs('${c.container_id}','${
-            c.name
-          }')">Logs</button>
+              <button class="btn" onclick="loadLogs('${c.container_id}','${c.name}')">Logs</button>
+
               ${
                 isRunning
-                  ? `<button class="btn" onclick="stopContainer('${c.container_id}')">Stop</button>`
-                  : ""
+                  ? `
+                    <button class="btn" onclick="restartContainer('${c.container_id}')">Restart</button>
+                    <button class="btn" onclick="stopContainer('${c.container_id}')">Stop</button>
+                  `
+                  : `
+                    <button class="btn" onclick="startContainer('${c.container_id}')">Start</button>
+                  `
               }
-              <button class="btn btn-danger" onclick="removeContainer('${
-                c.container_id
-              }')">Remove</button>
+
+              <button class="btn btn-danger" onclick="removeContainer('${c.container_id}')">Remove</button>
             </td>
           `;
           table.appendChild(tr);
@@ -293,22 +289,41 @@
         const res = await fetch(`${API}/logs/container`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            containerId: id,
-            tail: 200,
-            timestamps: true,
-          }),
+          body: JSON.stringify({ containerId: id, tail: 200, timestamps: true }),
         });
 
         const data = await res.json();
-        document.getElementById("logsBox").textContent =
-          data.logs || "No logs available";
+        document.getElementById("logsBox").textContent = data.logs || "No logs available";
+      }
+
+      async function startContainer(id) {
+        if (!confirm("Start this container?")) return;
+
+        await fetch(`${API}/start/container`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+
+        loadContainers();
       }
 
       async function stopContainer(id) {
         if (!confirm("Stop this container?")) return;
 
         await fetch(`${API}/stop/container`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+
+        loadContainers();
+      }
+
+      async function restartContainer(id) {
+        if (!confirm("Restart this container?")) return;
+
+        await fetch(`${API}/restart/container`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ containerId: id }),
