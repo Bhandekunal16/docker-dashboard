@@ -29,7 +29,6 @@ def container_logs():
     )
 
 
-
 @app.route("/get/all/containers")
 def load_containers():
     return service.load_containers()
@@ -51,7 +50,6 @@ def stop_container():
     return service.stop_container(container_id)
 
 
-
 @app.route("/remove/container", methods=["POST"])
 def remove_container():
     data = request.get_json(silent=True)
@@ -61,7 +59,6 @@ def remove_container():
         return jsonify({"error": "containerId is required"}), 400
 
     return service.remove_container(container_id)
-
 
 
 if __name__ == "__main__":
