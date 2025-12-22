@@ -1,13 +1,10 @@
-import subprocess
-import json
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from docker_help import docker_help, loader, service
+from docker_help import loader, service
 
 app = Flask(__name__)
 
 frontend = loader.load_json("./file.config.json")
-command = loader.load_json("./command.config.json")
 config = loader.load_json("./application.config.json")
 
 CORS(app)
