@@ -109,7 +109,7 @@ class service:
         result = docker_help.run_command(["docker", "start", f"{containerId}"])
         return loader.json_response(
             {
-                "message": "Container restarted successfully",
+                "message": "Container started successfully",
                 "containerId": containerId,
                 "output": result.stdout.strip(),
             },
