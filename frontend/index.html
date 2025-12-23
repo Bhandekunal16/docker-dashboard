@@ -159,7 +159,7 @@
   </head>
 
   <body>
-    <header>
+    <header style="margin-bottom: 1%;">
       <div class="container header-content">
         <h1><i class="fas fa-ship"></i> Docker Manager</h1>
         <button class="btn" onclick="loadAll()">Reload</button>
@@ -167,7 +167,6 @@
     </header>
 
     <main class="container">
-      <!-- CONTAINERS -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-box"></i> Containers</h2>
@@ -189,7 +188,6 @@
         </div>
       </section>
 
-      <!-- IMAGES -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-layer-group"></i> Images</h2>
@@ -211,7 +209,6 @@
         </div>
       </section>
 
-      <!-- LOGS -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-terminal"></i> Logs</h2>
@@ -221,7 +218,7 @@
       </section>
     </main>
 
-    <footer>Docker Manager © 2024</footer>
+    <footer style="margin-top: 1%;">Docker Manager © 2024</footer>
 
     <script>
       const API = "http://0.0.0.0:5000";
