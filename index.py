@@ -45,7 +45,7 @@ def stop_container():
     container_id = data.get("containerId")
 
     if not container_id:
-        return jsonify({"error": "containerId is required"}), 400
+        return loader.json_response({"error": "containerId is required"}, 400)
 
     return service.stop_container(container_id)
 
@@ -56,7 +56,7 @@ def remove_container():
 
     container_id = data.get("containerId") if data else None
     if not container_id:
-        return jsonify({"error": "containerId is required"}), 400
+        return loader.json_response({"error": "containerId is required"}, 400)
 
     return service.remove_container(container_id)
 
@@ -66,7 +66,7 @@ def restart_container():
 
     container_id = data.get("containerId") if data else None
     if not container_id:
-        return jsonify({"error": "containerId is required"}), 400
+        return loader.json_response({"error": "containerId is required"}, 400)
 
     return service.restart_container(container_id)
 
@@ -76,7 +76,7 @@ def start_container():
 
     container_id = data.get("containerId") if data else None
     if not container_id:
-        return jsonify({"error": "containerId is required"}), 400
+        return loader.json_response({"error": "containerId is required"}, 400)
 
     return service.start_container(container_id)
 
