@@ -12,7 +12,7 @@ class loader:
     def load_json(path: str):
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-        
+
     def default_Bad_Request(error: str):
         return loader.json_response({"error": error}, 400)
 
@@ -40,7 +40,6 @@ class service:
             for c in map(json.loads, result.stdout.splitlines())
         ]
 
-
     def load_images() -> list:
         result = docker_help.run_command(service.__command["get_images"])
 
@@ -61,7 +60,6 @@ class service:
             }
             for img in map(json.loads, result.stdout.splitlines())
         ]
-
 
     def container_logs(container_id: str, timestamps: bool, tail: int):
         cmd = ["docker", "logs"]
@@ -96,7 +94,7 @@ class service:
             },
             200,
         )
-        
+
     def restart_container(containerId: str):
         result = docker_help.run_command(["docker", "restart", f"{containerId}"])
         return loader.json_response(
@@ -107,7 +105,7 @@ class service:
             },
             200,
         )
-        
+
     def start_container(containerId: str):
         result = docker_help.run_command(["docker", "start", f"{containerId}"])
         return loader.json_response(
@@ -118,7 +116,6 @@ class service:
             },
             200,
         )
-
 
     def remove_container(containerId: str):
         result = docker_help.run_command(["docker", "rm", f"{containerId}"])
