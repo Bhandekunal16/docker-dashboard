@@ -13,7 +13,7 @@ class loader:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def default_Bad_Request(error: str):
+    def default_Bad_Request(error: str)-> tuple[Response, int]:
         return loader.json_response({"error": error}, 400)
 
     def json_response(obj: object, res_code: int) -> tuple[Response, int]:

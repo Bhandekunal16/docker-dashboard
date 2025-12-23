@@ -1,5 +1,5 @@
 from typing import Any
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, Response
 from flask_cors import CORS
 from docker_help import loader, service
 
@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 frontend = loader.load_json("./file.config.json")
 config = loader.load_json("./application.config.json")
-post =["POST"]
+post = ["POST"]
 
 CORS(app)
 
@@ -18,7 +18,7 @@ def ui():
 
 
 @app.route("/logs/container", methods=post)
-def container_logs() -> tuple[Any, int]:
+def container_logs() -> tuple[Response, int]:
     data = request.get_json(silent=True) or {}
     container_id = data.get("containerId")
     if not container_id:
@@ -42,7 +42,7 @@ def load_images() -> list:
 
 
 @app.route("/stop/container", methods=post)
-def stop_container() -> tuple[Any, int]:
+def stop_container() -> tuple[Response, int]:
     data = request.get_json(silent=True) or {}
     container_id = data.get("containerId")
 
@@ -53,7 +53,7 @@ def stop_container() -> tuple[Any, int]:
 
 
 @app.route("/remove/container", methods=post)
-def remove_container() -> tuple[Any, int]:
+def remove_container() -> tuple[Response, int]:
     data = request.get_json(silent=True)
 
     container_id = data.get("containerId") if data else None
@@ -64,7 +64,7 @@ def remove_container() -> tuple[Any, int]:
 
 
 @app.route("/restart/container", methods=post)
-def restart_container() -> tuple[Any, int]:
+def restart_container() -> tuple[Response, int]:
     data = request.get_json(silent=True)
 
     container_id = data.get("containerId") if data else None
@@ -75,7 +75,7 @@ def restart_container() -> tuple[Any, int]:
 
 
 @app.route("/start/container", methods=post)
-def start_container() -> tuple[Any, int]:
+def start_container() -> tuple[Response, int]:
     data = request.get_json(silent=True)
 
     container_id = data.get("containerId") if data else None
