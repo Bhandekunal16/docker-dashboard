@@ -159,7 +159,7 @@
   </head>
 
   <body>
-    <header style="margin-bottom: 1%;">
+    <header style="margin-bottom: 1%">
       <div class="container header-content">
         <h1><i class="fas fa-ship"></i> Docker Manager</h1>
         <button class="btn" onclick="loadAll()">Reload</button>
@@ -218,7 +218,7 @@
       </section>
     </main>
 
-    <footer style="margin-top: 1%;">Docker Manager © 2024</footer>
+    <footer style="margin-top: 1%">Docker Manager © 2024</footer>
 
     <script>
       const API = "http://0.0.0.0:5000";
@@ -233,15 +233,21 @@
           const isRunning = c.status.includes("Up");
 
           const tr = document.createElement("tr");
+          tr.style.textAlign = "center";
           tr.innerHTML = `
-            <td><span class="container-id">${c.container_id.slice(0, 12)}</span></td>
+            <td><span class="container-id">${c.container_id.slice(
+              0,
+              12
+            )}</span></td>
             <td>${c.name}</td>
             <td>${c.image}</td>
             <td class="${isRunning ? "status-running" : "status-exited"}">
               ${c.status}
             </td>
             <td>
-              <button class="btn" onclick="loadLogs('${c.container_id}','${c.name}')">Logs</button>
+              <button class="btn" onclick="loadLogs('${c.container_id}','${
+            c.name
+          }')">Logs</button>
 
               ${
                 isRunning
@@ -254,7 +260,9 @@
                   `
               }
 
-              <button class="btn btn-danger" onclick="removeContainer('${c.container_id}')">Remove</button>
+              <button class="btn btn-danger" onclick="removeContainer('${
+                c.container_id
+              }')">Remove</button>
             </td>
           `;
           table.appendChild(tr);
@@ -269,6 +277,7 @@
 
         data.forEach((i) => {
           const tr = document.createElement("tr");
+
           tr.innerHTML = `
             <td>${i.Tag || "<none>"}</td>
             <td>${i.Tag || "<none>"}</td>
@@ -276,6 +285,7 @@
             <td>${i.Size}</td>
             <td>${i.Containers}</td>
           `;
+          tr.style.textAlign = "center";
           table.appendChild(tr);
         });
       }
@@ -286,11 +296,16 @@
         const res = await fetch(`${API}/logs/container`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ containerId: id, tail: 200, timestamps: true }),
+          body: JSON.stringify({
+            containerId: id,
+            tail: 200,
+            timestamps: true,
+          }),
         });
 
         const data = await res.json();
-        document.getElementById("logsBox").textContent = data.logs || "No logs available";
+        document.getElementById("logsBox").textContent =
+          data.logs || "No logs available";
       }
 
       async function startContainer(id) {
