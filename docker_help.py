@@ -21,10 +21,10 @@ class loader:
 
 
 class service:
-    command = loader.load_json("./command.config.json")
+    __command = loader.load_json("./command.config.json")
 
     def load_containers() -> list:
-        result = docker_help.run_command(service.command["get_containers"])
+        result = docker_help.run_command(service.__command["get_containers"])
 
         if not result.stdout:
             return []
@@ -42,7 +42,7 @@ class service:
 
 
     def load_images() -> list:
-        result = docker_help.run_command(service.command["get_images"])
+        result = docker_help.run_command(service.__command["get_images"])
 
         if not result.stdout:
             return []
