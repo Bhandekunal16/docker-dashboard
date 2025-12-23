@@ -7,6 +7,7 @@ app = Flask(__name__)
 
 frontend = loader.load_json("./file.config.json")
 config = loader.load_json("./application.config.json")
+post =["POST"]
 
 CORS(app)
 
@@ -16,7 +17,7 @@ def ui():
     return send_from_directory(frontend["directory"], frontend["file"])
 
 
-@app.route("/logs/container", methods=["POST"])
+@app.route("/logs/container", methods=post)
 def container_logs() -> tuple[Any, int]:
     data = request.get_json(silent=True) or {}
     container_id = data.get("containerId")
@@ -40,7 +41,7 @@ def load_images() -> list:
     return service.load_images()
 
 
-@app.route("/stop/container", methods=["POST"])
+@app.route("/stop/container", methods=post)
 def stop_container() -> tuple[Any, int]:
     data = request.get_json(silent=True) or {}
     container_id = data.get("containerId")
@@ -51,7 +52,7 @@ def stop_container() -> tuple[Any, int]:
     return service.stop_container(container_id)
 
 
-@app.route("/remove/container", methods=["POST"])
+@app.route("/remove/container", methods=post)
 def remove_container() -> tuple[Any, int]:
     data = request.get_json(silent=True)
 
@@ -62,7 +63,7 @@ def remove_container() -> tuple[Any, int]:
     return service.remove_container(container_id)
 
 
-@app.route("/restart/container", methods=["POST"])
+@app.route("/restart/container", methods=post)
 def restart_container() -> tuple[Any, int]:
     data = request.get_json(silent=True)
 
@@ -73,7 +74,7 @@ def restart_container() -> tuple[Any, int]:
     return service.restart_container(container_id)
 
 
-@app.route("/start/container", methods=["POST"])
+@app.route("/start/container", methods=post)
 def start_container() -> tuple[Any, int]:
     data = request.get_json(silent=True)
 
