@@ -201,7 +201,7 @@
           <table>
             <thead>
               <tr>
-                <th>Repository</th>
+                <th>Created Since</th>
                 <th>Tag</th>
                 <th>ID</th>
                 <th>Size</th>
@@ -293,7 +293,7 @@
           const tr = document.createElement("tr");
           tr.style.textAlign = "center";
           tr.innerHTML = `
-            <td>${i.Repository || "<none>"}</td>
+            <td>${i.Created_Since || "<none>"}</td>
             <td>${i.Tag || "<none>"}</td>
             <td><span class="container-id">${i.ID.slice(7, 19)}</span></td>
             <td>${i.Size}</td>

@@ -49,11 +49,11 @@ class service:
         return [
             {
                 "Containers": img["Containers"],
-                "Created At": img["CreatedAt"],
-                "Created Since": img["CreatedSince"],
+                "Created_At": img["CreatedAt"],
+                "Created_Since": img["CreatedSince"],
                 "Digest": img["Digest"],
                 "ID": img["ID"],
-                "Shared Size": img["SharedSize"],
+                "Shared_Size": img["SharedSize"],
                 "Size": img["Size"],
                 "Tag": img["Tag"],
                 "UniqueSize": img["UniqueSize"],
