@@ -209,7 +209,7 @@
       </div>
     </header>
 
-    <main class="container" style="margin-top: 1%;">
+    <main class="container" style="margin-top: 1%">
       <section>
         <div class="section-header">
           <h2><i class="fas fa-box"></i> Containers</h2>
@@ -264,7 +264,7 @@
       </section>
     </main>
 
-    <footer style="margin-top: 1%;">Docker Manager © 2024</footer>
+    <footer style="margin-top: 1%">Docker Manager © 2024</footer>
 
     <div id="modalRoot" class="hidden">
       <div class="modal-backdrop"></div>
@@ -430,7 +430,15 @@
         loadContainers();
         loadImages();
       }
+
+      function onSomeTime() {
+        setInterval(() => {
+          loadAll()
+        }, 5000);
+      }
+
       document.addEventListener("DOMContentLoaded", loadAll);
+      document.addEventListener("DOMContentLoaded", onSomeTime);
     </script>
   </body>
 </html>
