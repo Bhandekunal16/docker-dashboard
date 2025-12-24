@@ -112,7 +112,6 @@
       .status-running {
         color: var(--success);
       }
-
       .status-exited {
         color: var(--danger);
       }
@@ -130,17 +129,14 @@
       .btn:hover {
         background: var(--surface-light);
       }
-
       .btn-success {
         border-color: var(--success);
         color: var(--success);
       }
-
       .btn-warning {
         border-color: var(--warning);
         color: var(--warning);
       }
-
       .btn-danger {
         border-color: var(--danger);
         color: var(--danger);
@@ -184,6 +180,15 @@
         border: 1px solid var(--border);
       }
 
+      .modal h3 {
+        color: var(--primary);
+        margin-bottom: 10px;
+      }
+      .modal p {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+      }
+
       .modal-actions {
         display: flex;
         justify-content: flex-end;
@@ -205,7 +210,6 @@
     </header>
 
     <main class="container">
-      <!-- Containers -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-box"></i> Containers</h2>
@@ -226,18 +230,16 @@
         </div>
       </section>
 
-      <!-- Images -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-layer-group"></i> Images</h2>
           <button
             class="btn btn-danger"
-            onclick="confirmAction('Remove selected images?', removeSelectedImages)"
+            onclick="confirmAction('Remove ALL images?', removeAllImages)"
           >
-            Remove Selected
+            <i class="fas fa-trash-sweep"></i> Remove All
           </button>
         </div>
-
         <div class="table-container">
           <table>
             <thead>
@@ -255,11 +257,15 @@
         </div>
       </section>
 
-      <!-- Logs -->
       <section>
         <div class="section-header">
           <h2><i class="fas fa-terminal"></i> Logs</h2>
-          <span id="logTitle">No container selected</span>
+          <div>
+            <span id="logTitle">No container selected</span>
+            <button class="btn btn-danger" onclick="resetLogs()">
+              Reset Logs
+            </button>
+          </div>
         </div>
         <div class="logs-box" id="logsBox">Select a container to view logs</div>
       </section>
@@ -267,7 +273,6 @@
 
     <footer>Docker Manager © 2024</footer>
 
-    <!-- Modal -->
     <div id="modalRoot" class="hidden">
       <div class="modal-backdrop"></div>
       <div class="modal">
@@ -282,12 +287,20 @@
 
     <script>
       const APIS = ["http://0.0.0.0:5000", "http://10.2.1.235:5000"];
+
       let activeAPI = null;
+      let refreshIntervalId = null;
+      let currentLogContainerId = null;
+      let currentLogContainerName = null;
       let modalAction = null;
-      let selectedImageIds = new Set();
+      let currentImages = []; // Store image data for batch actions
 
       async function fetchWithFallback(path, options = {}, timeout = 4000) {
-        for (const baseUrl of APIS) {
+        const servers = activeAPI
+          ? [activeAPI, ...APIS.filter((a) => a !== activeAPI)]
+          : APIS;
+
+        for (const baseUrl of servers) {
           try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), timeout);
@@ -298,12 +311,15 @@
             });
 
             clearTimeout(timer);
-            if (!res.ok) throw new Error();
+
+            if (!res.ok) throw new Error(res.status);
             activeAPI = baseUrl;
             return await res.json();
-          } catch {}
+          } catch (e) {
+            console.warn("API failed:", baseUrl);
+          }
         }
-        alert("API unreachable");
+        throw new Error("All APIs unreachable");
       }
 
       function openModal(title, msg, action) {
@@ -314,84 +330,152 @@
       }
 
       function closeModal() {
-        modalRoot.classList.add("hidden");
         modalAction = null;
+        modalRoot.classList.add("hidden");
       }
 
       modalConfirm.onclick = () => {
-        modalAction?.();
+        if (modalAction) modalAction();
         closeModal();
       };
 
       async function loadContainers() {
         const data = await fetchWithFallback("/get/all/containers");
-        containerTable.innerHTML = data
-          .map(
-            (c) => `
-          <tr>
-            <td><span class="container-id">${c.container_id.slice(0, 12)}</span></td>
-            <td>${c.name}</td>
-            <td>${c.image}</td>
-            <td>${c.status}</td>
-            <td>
-              <button class="btn btn-danger" onclick="removeContainer('${c.container_id}')">Remove</button>
-            </td>
-          </tr>
-        `
-          )
-          .join("");
+        containerTable.innerHTML = "";
+
+        data.forEach((c) => {
+          const running = c.status.includes("Up");
+          containerTable.innerHTML += `
+      <tr>
+        <td><span class="container-id">${c.container_id.slice(
+          0,
+          12
+        )}</span></td>
+        <td>${c.name}</td>
+        <td>${c.image}</td>
+        <td class="${running ? "status-running" : "status-exited"}">${
+            c.status
+          }</td>
+        <td>
+          <button class="btn" onclick="loadLogs('${c.container_id}','${
+            c.name
+          }')">Logs</button>
+          ${
+            running
+              ? `<button class="btn btn-success" onclick="confirmAction('Restart?',()=>restartContainer('${c.container_id}'))">Restart</button>
+               <button class="btn btn-warning" onclick="confirmAction('Stop?',()=>stopContainer('${c.container_id}'))">Stop</button>`
+              : `<button class="btn btn-warning" onclick="confirmAction('Start?',()=>startContainer('${c.container_id}'))">Start</button>`
+          }
+          <button class="btn btn-danger" onclick="confirmAction('Remove?',()=>removeContainer('${
+            c.container_id
+          }'))">Remove</button>
+        </td>
+      </tr>`;
+        });
       }
 
       async function loadImages() {
         const data = await fetchWithFallback("/get/all/images");
-        selectedImageIds.clear();
-
+        currentImages = data; // Save for batch actions
         imageTable.innerHTML = data
           .map(
             (i) => `
-          <tr>
-            <td>${i.Created_Since}</td>
-            <td>${i.Tag || "<none>"}</td>
-            <td><span class="container-id">${i.ID.slice(7, 19)}</span></td>
-            <td>${i.Size}</td>
-            <td>${i.Containers}</td>
-            <td>
-              <input type="checkbox" onchange="toggleImage('${i.ID}')" />
-              <button class="btn btn-danger"
-                onclick="confirmAction('Remove image?',()=>removeImage('${i.ID}'))">
-                Remove
-              </button>
-            </td>
-          </tr>
-        `
+    <tr>
+      <td>${i.Created_Since}</td>
+      <td>${i.Tag || "<none>"}</td>
+      <td><span class="container-id">${i.ID.slice(7, 19)}</span></td>
+      <td>${i.Size}</td>
+      <td>${i.Containers}</td>
+      <td>
+        <button class="btn btn-danger" onclick="confirmAction('Remove Image?', () => removeImage('${
+          i.ID
+        }'))">
+            <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `
           )
           .join("");
       }
 
-      function toggleImage(id) {
-        selectedImageIds.has(id)
-          ? selectedImageIds.delete(id)
-          : selectedImageIds.add(id);
-      }
+      // --- New Image Management Methods ---
 
       async function removeImage(imageId) {
         await fetchWithFallback("/remove/image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageId }),
+          body: JSON.stringify({ imageId: imageId }),
         });
         loadImages();
       }
 
-      async function removeSelectedImages() {
-        if (!selectedImageIds.size) return;
+      async function removeAllImages() {
+        const ids = currentImages.map((i) => i.ID);
+        if (ids.length === 0) return;
 
         await fetchWithFallback("/remove/images", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageIds: [...selectedImageIds] }),
+          body: JSON.stringify({ imageIds: ids }),
         });
         loadImages();
+      }
+
+      // ------------------------------------
+
+      async function loadLogs(id, name) {
+        currentLogContainerId = id;
+        currentLogContainerName = name;
+        logTitle.textContent = name;
+
+        const data = await fetchWithFallback("/logs/container", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            containerId: id,
+            tail: 200,
+            timestamps: true,
+          }),
+        });
+
+        logsBox.textContent = data.logs || "No logs";
+      }
+
+      async function refreshLogsIfNeeded() {
+        if (!currentLogContainerId) return;
+        loadLogs(currentLogContainerId, currentLogContainerName);
+      }
+
+      function confirmAction(msg, fn) {
+        openModal("Confirm Action", msg, fn);
+      }
+
+      async function startContainer(id) {
+        await fetchWithFallback("/start/container", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+        loadContainers();
+      }
+
+      async function stopContainer(id) {
+        await fetchWithFallback("/stop/container", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+        loadContainers();
+      }
+
+      async function restartContainer(id) {
+        await fetchWithFallback("/restart/container", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ containerId: id }),
+        });
+        loadContainers();
       }
 
       async function removeContainer(id) {
@@ -403,8 +487,11 @@
         loadContainers();
       }
 
-      function confirmAction(msg, fn) {
-        openModal("Confirm", msg, fn);
+      function resetLogs() {
+        currentLogContainerId = null;
+        currentLogContainerName = null;
+        logTitle.textContent = "No container selected";
+        logsBox.textContent = "Logs cleared.";
       }
 
       function loadAll() {
@@ -412,7 +499,18 @@
         loadImages();
       }
 
-      document.addEventListener("DOMContentLoaded", loadAll);
+      function startAutoRefresh() {
+        if (refreshIntervalId) return;
+        refreshIntervalId = setInterval(() => {
+          loadAll();
+          refreshLogsIfNeeded();
+        }, 30000);
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadAll();
+        startAutoRefresh();
+      });
     </script>
   </body>
 </html>
