@@ -13,7 +13,7 @@ class loader:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def default_Bad_Request(error: str)-> tuple[Response, int]:
+    def default_Bad_Request(error: str) -> tuple[Response, int]:
         return loader.json_response({"error": error}, 400)
 
     def json_response(obj: object, res_code: int) -> tuple[Response, int]:
@@ -126,4 +126,39 @@ class service:
                 "output": result.stdout.strip(),
             },
             200,
+        )
+
+    def remove_image(imageId: str):
+        result = docker_help.run_command(["docker", "rmi", f"{imageId}"])
+        return loader.json_response(
+            {
+                "message": "Container stopped successfully",
+                "imageId": imageId,
+                "output": result.stdout.strip(),
+            },
+            200,
+        )
+
+    def remove_images(image_ids: list[str]):
+        if not image_ids:
+            return loader.json_response(
+                {"message": "No image IDs provided"},
+                400,
+            )
+
+        result = docker_help.run_command(["docker", "rmi", *image_ids])
+
+        status = 200 if result.returncode == 0 else 400
+
+        return loader.json_response(
+            {
+                "message": (
+                    "Images removed successfully"
+                    if status == 200
+                    else "Failed to remove images"
+                ),
+                "imageIds": image_ids,
+                "output": result.stdout.strip() or result.stderr.strip(),
+            },
+            status,
         )

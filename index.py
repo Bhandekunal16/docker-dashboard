@@ -84,5 +84,28 @@ def start_container() -> tuple[Response, int]:
 
     return service.start_container(container_id)
 
+
+@app.route("/remove/image", methods=["POST"])
+def remove_image() -> tuple[Response, int]:
+    data = request.get_json(silent=True) or {}
+
+    image_id = data.get("imageId")
+    if not image_id or not isinstance(image_id, str):
+        return loader.default_Bad_Request("imageId is required and must be a string")
+
+    return service.remove_image(image_id)
+
+
+@app.route("/remove/images", methods=["POST"])
+def remove_images() -> tuple[Response, int]:
+    data = request.get_json(silent=True) or {}
+
+    image_ids = data.get("imageIds")
+    if not image_ids or not isinstance(image_ids, list):
+        return loader.default_Bad_Request("imageIds is required and must be a list")
+
+    return service.remove_images(image_ids)
+
+
 if __name__ == "__main__":
     app.run(host=config["host"], port=config["port"], debug=True)
