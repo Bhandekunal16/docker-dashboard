@@ -433,8 +433,30 @@
 
       function onSomeTime() {
         setInterval(() => {
-          loadAll()
+          loadAll();
+          checkLogs();
         }, 30000);
+      }
+
+      async function checkLogs() {
+        console.log(currentLogContainerId, 0)
+        if (currentLogContainerId) {
+          document.getElementById("logTitle").textContent = name;
+
+          const res = await fetch(`${API}/logs/container`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              containerId: currentLogContainerId,
+              tail: 200,
+              timestamps: true,
+            }),
+          });
+
+          const data = await res.json();
+          document.getElementById("logsBox").textContent =
+            data.logs || "No logs";
+        }
       }
 
       document.addEventListener("DOMContentLoaded", loadAll);
