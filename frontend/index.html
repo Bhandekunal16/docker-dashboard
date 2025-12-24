@@ -209,7 +209,7 @@
       </div>
     </header>
 
-    <main class="container" style="margin-top: 1%">
+    <main class="container">
       <section>
         <div class="section-header">
           <h2><i class="fas fa-box"></i> Containers</h2>
@@ -264,7 +264,7 @@
       </section>
     </main>
 
-    <footer style="margin-top: 1%">Docker Manager © 2024</footer>
+    <footer>Docker Manager © 2024</footer>
 
     <div id="modalRoot" class="hidden">
       <div class="modal-backdrop"></div>
@@ -279,36 +279,65 @@
     </div>
 
     <script>
-      const API = "http://10.2.1.235:5000";
+      const APIS = ["http://0.0.0.0:5000", "http://10.2.1.235:5000"];
+
+      let activeAPI = null;
+      let refreshIntervalId = null;
       let currentLogContainerId = null;
+      let currentLogContainerName = null;
       let modalAction = null;
 
-      function openModal(title, message, onConfirm) {
-        modalAction = onConfirm;
-        document.getElementById("modalTitle").textContent = title;
-        document.getElementById("modalMessage").textContent = message;
-        document.getElementById("modalRoot").classList.remove("hidden");
+      async function fetchWithFallback(path, options = {}, timeout = 4000) {
+        const servers = activeAPI
+          ? [activeAPI, ...APIS.filter((a) => a !== activeAPI)]
+          : APIS;
+
+        for (const baseUrl of servers) {
+          try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+
+            const res = await fetch(`${baseUrl}${path}`, {
+              ...options,
+              signal: controller.signal,
+            });
+
+            clearTimeout(timer);
+
+            if (!res.ok) throw new Error(res.status);
+            activeAPI = baseUrl;
+            return await res.json();
+          } catch (e) {
+            console.warn("API failed:", baseUrl);
+          }
+        }
+        throw new Error("All APIs unreachable");
+      }
+
+      function openModal(title, msg, action) {
+        modalAction = action;
+        modalTitle.textContent = title;
+        modalMessage.textContent = msg;
+        modalRoot.classList.remove("hidden");
       }
 
       function closeModal() {
         modalAction = null;
-        document.getElementById("modalRoot").classList.add("hidden");
+        modalRoot.classList.add("hidden");
       }
 
-      document.getElementById("modalConfirm").onclick = () => {
+      modalConfirm.onclick = () => {
         if (modalAction) modalAction();
         closeModal();
       };
 
       async function loadContainers() {
-        const res = await fetch(`${API}/get/all/containers`);
-        const data = await res.json();
-        const table = document.getElementById("containerTable");
-        table.innerHTML = "";
+        const data = await fetchWithFallback("/get/all/containers");
+        containerTable.innerHTML = "";
 
         data.forEach((c) => {
-          const isRunning = c.status.includes("Up");
-          table.innerHTML += `
+          const running = c.status.includes("Up");
+          containerTable.innerHTML += `
       <tr>
         <td><span class="container-id">${c.container_id.slice(
           0,
@@ -316,7 +345,7 @@
         )}</span></td>
         <td>${c.name}</td>
         <td>${c.image}</td>
-        <td class="${isRunning ? "status-running" : "status-exited"}">${
+        <td class="${running ? "status-running" : "status-exited"}">${
             c.status
           }</td>
         <td>
@@ -324,12 +353,12 @@
             c.name
           }')">Logs</button>
           ${
-            isRunning
-              ? `<button class="btn btn-success" onclick="confirmAction('Restart container?',()=>restartContainer('${c.container_id}'))">Restart</button>
-               <button class="btn btn-warning" onclick="confirmAction('Stop container?',()=>stopContainer('${c.container_id}'))">Stop</button>`
-              : `<button class="btn btn-warning" onclick="confirmAction('Start container?',()=>startContainer('${c.container_id}'))">Start</button>`
+            running
+              ? `<button class="btn btn-success" onclick="confirmAction('Restart?',()=>restartContainer('${c.container_id}'))">Restart</button>
+               <button class="btn btn-warning" onclick="confirmAction('Stop?',()=>stopContainer('${c.container_id}'))">Stop</button>`
+              : `<button class="btn btn-warning" onclick="confirmAction('Start?',()=>startContainer('${c.container_id}'))">Start</button>`
           }
-          <button class="btn btn-danger" onclick="confirmAction('Remove container permanently?',()=>removeContainer('${
+          <button class="btn btn-danger" onclick="confirmAction('Remove?',()=>removeContainer('${
             c.container_id
           }'))">Remove</button>
         </td>
@@ -338,27 +367,28 @@
       }
 
       async function loadImages() {
-        const res = await fetch(`${API}/get/all/images`);
-        const data = await res.json();
-        document.getElementById("imageTable").innerHTML = data
+        const data = await fetchWithFallback("/get/all/images");
+        imageTable.innerHTML = data
           .map(
             (i) => `
-      <tr>
-        <td>${i.Created_Since}</td>
-        <td>${i.Tag || "<none>"}</td>
-        <td><span class="container-id">${i.ID.slice(7, 19)}</span></td>
-        <td>${i.Size}</td>
-        <td>${i.Containers}</td>
-      </tr>`
+    <tr>
+      <td>${i.Created_Since}</td>
+      <td>${i.Tag || "<none>"}</td>
+      <td><span class="container-id">${i.ID.slice(7, 19)}</span></td>
+      <td>${i.Size}</td>
+      <td>${i.Containers}</td>
+    </tr>
+  `
           )
           .join("");
       }
 
       async function loadLogs(id, name) {
         currentLogContainerId = id;
-        document.getElementById("logTitle").textContent = name;
+        currentLogContainerName = name;
+        logTitle.textContent = name;
 
-        const res = await fetch(`${API}/logs/container`, {
+        const data = await fetchWithFallback("/logs/container", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -368,30 +398,20 @@
           }),
         });
 
-        const data = await res.json();
-        document.getElementById("logsBox").textContent = data.logs || "No logs";
+        logsBox.textContent = data.logs || "No logs";
       }
 
-      function resetLogs() {
-        if (!currentLogContainerId) {
-          openModal("Notice", "No container selected.", closeModal);
-          return;
-        }
-
-        openModal("Reset Logs", "Clear logs from viewer?", () => {
-          document.getElementById("logsBox").textContent = "Logs cleared.";
-          document.getElementById("logTitle").textContent =
-            "No container selected";
-          currentLogContainerId = null;
-        });
+      async function refreshLogsIfNeeded() {
+        if (!currentLogContainerId) return;
+        loadLogs(currentLogContainerId, currentLogContainerName);
       }
 
-      function confirmAction(msg, action) {
-        openModal("Confirm Action", msg, action);
+      function confirmAction(msg, fn) {
+        openModal("Confirm Action", msg, fn);
       }
 
       async function startContainer(id) {
-        await fetch(`${API}/start/container`, {
+        await fetchWithFallback("/start/container", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ containerId: id }),
@@ -400,7 +420,7 @@
       }
 
       async function stopContainer(id) {
-        await fetch(`${API}/stop/container`, {
+        await fetchWithFallback("/stop/container", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ containerId: id }),
@@ -409,7 +429,7 @@
       }
 
       async function restartContainer(id) {
-        await fetch(`${API}/restart/container`, {
+        await fetchWithFallback("/restart/container", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ containerId: id }),
@@ -418,7 +438,7 @@
       }
 
       async function removeContainer(id) {
-        await fetch(`${API}/remove/container`, {
+        await fetchWithFallback("/remove/container", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ containerId: id }),
@@ -426,40 +446,30 @@
         loadContainers();
       }
 
+      function resetLogs() {
+        currentLogContainerId = null;
+        currentLogContainerName = null;
+        logTitle.textContent = "No container selected";
+        logsBox.textContent = "Logs cleared.";
+      }
+
       function loadAll() {
         loadContainers();
         loadImages();
       }
 
-      function onSomeTime() {
-        setInterval(() => {
+      function startAutoRefresh() {
+        if (refreshIntervalId) return;
+        refreshIntervalId = setInterval(() => {
           loadAll();
-          checkLogs();
+          refreshLogsIfNeeded();
         }, 30000);
       }
 
-      async function checkLogs() {
-        if (currentLogContainerId) {
-          document.getElementById("logTitle").textContent = name;
-
-          const res = await fetch(`${API}/logs/container`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              containerId: currentLogContainerId,
-              tail: 200,
-              timestamps: true,
-            }),
-          });
-
-          const data = await res.json();
-          document.getElementById("logsBox").textContent =
-            data.logs || "No logs";
-        }
-      }
-
-      document.addEventListener("DOMContentLoaded", loadAll);
-      document.addEventListener("DOMContentLoaded", onSomeTime);
+      document.addEventListener("DOMContentLoaded", () => {
+        loadAll();
+        startAutoRefresh();
+      });
     </script>
   </body>
 </html>

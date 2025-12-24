@@ -84,6 +84,5 @@ def start_container() -> tuple[Response, int]:
 
     return service.start_container(container_id)
 
-
 if __name__ == "__main__":
     app.run(host=config["host"], port=config["port"], debug=True)
