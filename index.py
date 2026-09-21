@@ -1,12 +1,15 @@
+import os
 from typing import Any
 from flask import Flask, request, send_from_directory, Response
 from flask_cors import CORS
 from docker_help import loader, service
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 
 frontend = loader.load_json("./file.config.json")
 config = loader.load_json("./application.config.json")
+frontend_dir = os.path.join(BASE_DIR, frontend["directory"])
 post = ["POST"]
 
 CORS(app)
@@ -14,7 +17,12 @@ CORS(app)
 
 @app.route("/")
 def ui():
-    return send_from_directory(frontend["directory"], frontend["file"])
+    return send_from_directory(frontend_dir, frontend["file"])
+
+
+@app.route("/assets/<path:filename>")
+def serve_asset(filename: str):
+    return send_from_directory(os.path.join(frontend_dir, "assets"), filename)
 
 
 @app.route("/logs/container", methods=post)
@@ -105,6 +113,15 @@ def remove_images() -> tuple[Response, int]:
         return loader.default_Bad_Request("imageIds is required and must be a list")
 
     return service.remove_images(image_ids)
+
+
+@app.route("/<path:path>")
+def serve_frontend(path: str):
+    if path.startswith("assets/"):
+        return serve_asset(path.replace("assets/", "", 1))
+    if path == "favicon.ico":
+        return send_from_directory(frontend_dir, path)
+    return send_from_directory(frontend_dir, frontend["file"])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
 {
-  "directory": "frontend",
+  "directory": "frontend/docker-manager/dist",
   "file": "index.html"
 }
