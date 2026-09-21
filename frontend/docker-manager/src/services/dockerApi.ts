@@ -1,7 +1,7 @@
 import { DockerContainer, DockerImage } from '../types';
 
 // Default APIs as provided in the original code
-export const DEFAULT_APIS = ['http://localhost:5000', 'http://10.2.1.235:5000', 'http://0.0.0.0:5000'];
+export const DEFAULT_APIS = ['http://0.0.0.0:5000'];
 
 // Initial mock dataset for simulation when real endpoints are unreachable
 const INITIAL_CONTAINERS: DockerContainer[] = [

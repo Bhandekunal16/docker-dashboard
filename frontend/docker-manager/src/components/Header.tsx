@@ -3,12 +3,10 @@ import {
   RotateCw,
   Server,
   Plus,
-  BookOpen,
   Wifi,
   Settings2,
   CheckCircle2,
   PlusCircle,
-  HelpCircle,
 } from 'lucide-react';
 import { ViewTab } from '../types';
 
@@ -22,7 +20,6 @@ interface HeaderProps {
   apiEndpoints: string[];
   onSelectEndpoint: (url: string) => void;
   onAddEndpoint: (url: string) => void;
-  onTogglePrinciplesGuide: () => void;
   onOpenCreateContainer: () => void;
   autoRefresh: boolean;
   setAutoRefresh: (val: boolean) => void;
@@ -39,7 +36,6 @@ export const Header: React.FC<HeaderProps> = ({
   activeEndpoint,
   apiEndpoints,
   onAddEndpoint,
-  onTogglePrinciplesGuide,
   onOpenCreateContainer,
   autoRefresh,
   setAutoRefresh,
@@ -106,20 +102,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Hub - Fitts's Law comfortable click zones & Gestalt proximity */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* UI Principles Guide Badge Button */}
-            <button
-              id="ui-principles-guide-btn"
-              onClick={onTogglePrinciplesGuide}
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-indigo-950/70 text-indigo-300 border border-indigo-700/50 hover:bg-indigo-900/80 hover:text-indigo-200 transition-all shadow-sm"
-              title="Inspect how Hick's, Fitts's, Jakob's, Miller's, Proximity, & Aesthetic laws are applied"
-            >
-              <BookOpen className="w-4 h-4 text-indigo-400" />
-              <span>UI Principles</span>
-              <span className="px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-mono">
-                6 Rules
-              </span>
-            </button>
-
             {/* Launch Container Quick Action */}
             <button
               id="header-create-container-btn"
@@ -225,14 +207,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </nav>
 
-          <button
-            id="mobile-principles-guide-btn"
-            onClick={onTogglePrinciplesGuide}
-            className="md:hidden flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 px-2.5 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-800/40 whitespace-nowrap"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>UI Principles</span>
-          </button>
         </div>
       </div>
 

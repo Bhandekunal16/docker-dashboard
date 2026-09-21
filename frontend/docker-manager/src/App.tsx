@@ -8,7 +8,6 @@ import { ImagesTable } from './components/ImagesTable';
 import { LogsViewer } from './components/LogsViewer';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { CreateContainerModal } from './components/CreateContainerModal';
-import { UIPrinciplesGuide } from './components/UIPrinciplesGuide';
 import { dockerApi } from './services/dockerApi';
 import { DockerContainer, DockerImage, ViewTab, ContainerFilterStatus } from './types';
 import { CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
@@ -55,7 +54,6 @@ export default function App() {
     onConfirm: () => {},
   });
 
-  const [isPrinciplesGuideOpen, setIsPrinciplesGuideOpen] = useState(false);
   const [isCreateContainerOpen, setIsCreateContainerOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastInfo[]>([]);
 
@@ -370,7 +368,6 @@ export default function App() {
           loadData();
           addToast(`Added endpoint ${url}`, 'info');
         }}
-        onTogglePrinciplesGuide={() => setIsPrinciplesGuideOpen(true)}
         onOpenCreateContainer={() => setIsCreateContainerOpen(true)}
         autoRefresh={autoRefresh}
         setAutoRefresh={setAutoRefresh}
@@ -448,13 +445,6 @@ export default function App() {
             <span className="text-slate-400 font-mono text-[11px]">Engine v26.1-ce</span>
           </div>
 
-          <button
-            onClick={() => setIsPrinciplesGuideOpen(true)}
-            className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>UI Principles: Hick's, Fitts's, Jakob's, Miller's, Proximity, Aesthetic</span>
-          </button>
         </div>
       </footer>
 
@@ -477,10 +467,6 @@ export default function App() {
         onCreate={handleCreateContainer}
       />
 
-      <UIPrinciplesGuide
-        isOpen={isPrinciplesGuideOpen}
-        onClose={() => setIsPrinciplesGuideOpen(false)}
-      />
     </div>
   );
 }
