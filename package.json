@@ -1,0 +1,66 @@
+{
+  "name": "docker-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Docker Dashboard web server and Electron desktop application",
+  "desktopName": "docker-dashboard",
+  "author": {
+    "name": "Docker Dashboard",
+    "email": "maintainers@docker-dashboard.local"
+  },
+  "main": "desktop/main.js",
+  "scripts": {
+    "server": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev",
+    "frontend:dev": "npm --prefix frontend/docker-dashboard-react run dev",
+    "frontend:build": "npm --prefix frontend/docker-dashboard-react run build",
+    "desktop:dev": "node desktop/dev.js",
+    "desktop:build": "npm run frontend:build && electron-builder",
+    "test": "npm --prefix server test && node --test desktop/test/*.test.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.dockerdashboard.app",
+    "productName": "Docker Dashboard",
+    "asar": true,
+    "files": [
+      "desktop/**/*",
+      "server/**/*",
+      "frontend/docker-dashboard-react/dist/**/*",
+      "application.config.json",
+      "command.config.json",
+      "file.config.json",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "syncDesktopName": true,
+      "category": "Utility"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities"
+    }
+  }
+}

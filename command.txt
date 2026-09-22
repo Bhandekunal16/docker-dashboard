@@ -1,0 +1,4 @@
+./runner.sh desktop   # Start Electron desktop app
+./runner.sh web       # Start backend only
+./runner.sh build     # Build desktop installers
+./runner.sh test      # Run backend and desktop tests

@@ -15,7 +15,8 @@ additive `/api/*` routes.
 
 The architecture is intentionally incremental:
 
-- The current backend keeps route wiring in `server/index.js`.
+- The current backend composes the app in `server/app.js` and starts it from
+  `server/index.js`.
 - The Docker-facing implementation is in `server/docker/adapter.js`.
 - Routes, controllers, services, middleware, errors, configuration, and Docker
   adapter modules are logical boundaries for continued extraction as the
@@ -29,7 +30,7 @@ The architecture is intentionally incremental:
 flowchart TD
     Browser[Browser]
     SPA[React + TypeScript SPA<br/>Vite + TanStack Query + Axios]
-    Routes[Express routes<br/>current wiring: server/index.js]
+    Routes[Express routes<br/>current wiring: server/app.js]
     Controllers[Controllers<br/>request validation and responses]
     Services[Dashboard service layer<br/>container and image operations]
     Adapter[Docker adapter<br/>Docker-specific command execution]
@@ -57,6 +58,28 @@ The frontend must never communicate with Docker directly. Docker authority is
 kept behind the API so authentication, authorization, validation, error
 normalization, rate limiting, and auditing can be applied consistently.
 
+## 2.1 Desktop topology
+
+```mermaid
+flowchart TD
+    Electron[Electron desktop shell]
+    Window[BrowserWindow<br/>context isolation + sandbox]
+    Preload[Minimal preload configuration]
+    LocalAPI[Node.js + Express<br/>127.0.0.1:5000]
+    Docker[Docker adapter and daemon]
+    Tray[System tray and lifecycle]
+
+    Electron --> Window
+    Electron --> LocalAPI
+    Window --> Preload
+    Window -->|HTTP/JSON| LocalAPI
+    LocalAPI --> Docker
+    Electron --> Tray
+```
+
+Electron owns the window, tray, child-process lifecycle, readiness polling,
+and desktop notifications. It does not contain Docker business logic.
+
 ## 3. Runtime components
 
 ### 3.1 React frontend
@@ -81,13 +104,18 @@ The default API base URL is `http://0.0.0.0:5000`. It can be set at build time
 with `VITE_API_BASE_URL` or overridden at runtime in the UI and persisted in
 browser `localStorage`.
 
+In desktop mode, the preload script supplies
+`http://127.0.0.1:<DESKTOP_PORT>` as the initial API base URL. The existing API
+configuration UI and local-storage override remain available for advanced
+users and remote/server mode.
+
 ### 3.2 Express API
 
 Location: `server/`
 
-`server/index.js` creates the Express application and currently contains the
-route definitions, middleware registration, request validation, static-file
-serving, and server startup.
+`server/app.js` creates the Express application and contains route definitions,
+middleware registration, request validation, and static-file serving.
+`server/index.js` loads configuration and starts the server.
 
 The intended incremental separation is:
 
@@ -394,6 +422,39 @@ Node.js + Express :5000
 Docker CLI / Docker daemon
 ```
 
+### Desktop startup lifecycle
+
+```text
+Electron starts
+   ↓
+Acquire single-instance lock
+   ↓
+Start Node.js child process on 127.0.0.1
+   ↓
+Poll /health and /ready
+   ↓
+Load React dashboard
+   ↓
+Keep window/tray alive until Quit
+   ↓
+Stop child process and exit
+```
+
+If readiness fails, Electron displays a Docker-unavailable state and keeps the
+tray available for a restart attempt. A second launch focuses the existing
+instance instead of starting a duplicate backend.
+
+## 11.1 Desktop security boundary
+
+- The desktop API binds to `127.0.0.1` by setting `HOST` for the child server.
+- The renderer has no Node.js integration and runs with context isolation and
+  sandboxing enabled.
+- The preload exposes only the desktop API base URL.
+- External links are opened through an explicit allowlisted main-process
+  handler.
+- The renderer continues to use HTTP to communicate with Express; it never
+  receives Docker socket or child-process access.
+
 ## 12. Testing strategy
 
 The architecture should be testable without requiring a live Docker daemon:
@@ -427,6 +488,8 @@ invoke the host Docker daemon.
 
 ```text
 docker-dashboard/
+├── package.json                          # Electron, desktop, and root scripts
+├── package-lock.json                     # Root dependency lockfile
 ├── application.config.json              # Current server host and port
 ├── command.config.json                  # Docker listing commands
 ├── file.config.json                     # Frontend serving configuration
@@ -445,6 +508,13 @@ docker-dashboard/
 │   ├── errors/                          # Future typed application errors
 │   ├── config/                          # Future environment-aware config
 │   └── utils/                           # Future shared utilities
+├── desktop/
+│   ├── main.js                           # Electron main process
+│   ├── dev.js                            # Vite + Electron development launcher
+│   ├── preload.js                        # Minimal renderer bridge
+│   ├── tray.js                           # System tray menu
+│   ├── server-lifecycle.js               # Readiness and shutdown helpers
+│   └── test/                             # Desktop lifecycle tests
 └── frontend/docker-dashboard-react/
     ├── src/                             # React and TypeScript source
     ├── dist/                            # Built SPA
@@ -454,6 +524,10 @@ docker-dashboard/
 The future directories are extraction targets, not claims that empty modules
 already exist. They should be introduced only when the corresponding
 responsibility is moved out of the current files.
+
+Electron Builder targets Linux AppImage/deb, Windows NSIS, and macOS DMG.
+Installer output is generated under `release/` and is intentionally ignored
+by Git.
 
 ## 15. Recommended next steps
 

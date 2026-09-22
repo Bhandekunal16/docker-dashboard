@@ -65,7 +65,7 @@ The application uses three configuration files.
 ```json
 {
   "host": "0.0.0.0",
-  "port": 3000
+  "port": 5000
 }
 ```
 
@@ -268,6 +268,84 @@ Responsible for:
 * Keeping Docker CLI details out of routes and services
 
 The Docker CLI is executed using Node.js `child_process`.
+
+## Desktop application
+
+The repository includes a thin Electron shell around the existing React UI
+and Express backend. Electron starts the backend on localhost, waits for
+`/health` and `/ready`, then loads the dashboard.
+
+```text
+Electron
+  -> Node.js + Express at 127.0.0.1:5000
+  -> React build
+  -> Docker adapter
+  -> Docker daemon
+```
+
+Desktop mode does not expose the API on the LAN. The renderer uses
+`contextIsolation: true`, `nodeIntegration: false`, and a minimal preload
+configuration. Docker operations remain exclusively in the Node.js backend.
+
+### Desktop development
+
+Build the frontend and launch Electron:
+
+```bash
+npm install
+npm run frontend:build
+npm run desktop:dev
+```
+
+The same workflow can be started with:
+
+```bash
+./runner.sh desktop
+```
+
+For frontend hot reload, run the Vite development server separately with
+`npm run frontend:dev`; the production-like desktop flow remains the default
+so the packaged and local desktop paths match.
+
+### Web-only mode
+
+To run only the Node.js backend for browser or separately hosted frontend use:
+
+```bash
+./runner.sh web
+```
+
+This starts only the backend at `http://127.0.0.1:5000`. In another terminal,
+start the Vite frontend:
+
+```bash
+npm run frontend:dev
+```
+
+Then open `http://localhost:3000`. In web-only mode, the browser frontend and
+backend are separate processes. In desktop mode, Electron starts and stops the
+backend automatically and loads the dashboard after `/health` and `/ready`
+complete successfully.
+
+### Desktop packaging
+
+Build platform installers with:
+
+```bash
+npm run desktop:build
+```
+
+Electron Builder is configured for AppImage and deb on Linux, NSIS on Windows,
+and DMG on macOS. Installer artifacts are written to `release/`.
+
+### Desktop behavior
+
+- Closing the window hides it in the system tray.
+- The tray provides Open Dashboard, Restart Server, Open Settings, and Quit.
+- Quit gracefully terminates the local Node.js child process.
+- If Docker is unavailable, the shell displays a recovery message instead of
+  opening a broken dashboard.
+- Use `DESKTOP_PORT` to select another local port when `5000` is occupied.
 
 ## Express 5 Compatibility
 
