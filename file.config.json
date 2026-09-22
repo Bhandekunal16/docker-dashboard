@@ -1,4 +1,4 @@
 {
-  "directory": "frontend/dist",
+  "directory": "frontend/docker-dashboard-react/dist",
   "file": "index.html"
 }
