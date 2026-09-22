@@ -1,4 +1,4 @@
-./runner.sh desktop   # Start Electron desktop app
+./runner.sh desktop   # Requests one-time sandbox permission through pkexec
 ./runner.sh web       # Start backend only
 ./runner.sh build     # Build desktop installers
 ./runner.sh test      # Run backend and desktop tests
