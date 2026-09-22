@@ -303,6 +303,21 @@ The same workflow can be started with:
 ./runner.sh desktop
 ```
 
+On Linux, the desktop launcher checks Electron's bundled Chromium sandbox
+helper before starting. If the helper is not configured, the launcher uses
+`pkexec` to request one-time administrator authorization and configures it
+automatically. The app does not require Google Chrome to be installed;
+Electron includes its own Chromium runtime.
+
+If authorization is canceled, install `polkit`/`pkexec` or run the launcher
+again and approve the one-time system prompt. The application never requests
+administrator permission on every startup. For trusted development only,
+Electron can instead be run with `--no-sandbox`, but disabling the Chromium
+sandbox is not recommended for production.
+
+The launcher starts Vite and waits for `http://127.0.0.1:3000` to respond
+before starting Electron, preventing an initial renderer connection failure.
+
 For frontend hot reload, run the Vite development server separately with
 `npm run frontend:dev`; the production-like desktop flow remains the default
 so the packaged and local desktop paths match.

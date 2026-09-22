@@ -425,7 +425,15 @@ Docker CLI / Docker daemon
 ### Desktop startup lifecycle
 
 ```text
-Electron starts
+Desktop launcher starts
+   ↓
+On Linux, verify Electron's bundled Chromium sandbox helper
+   ↓
+If needed, request one-time authorization through PolicyKit (pkexec)
+   ↓
+Start Vite and wait for the development URL
+   ↓
+Start Electron
    ↓
 Acquire single-instance lock
    ↓
@@ -449,6 +457,15 @@ instance instead of starting a duplicate backend.
 - The desktop API binds to `127.0.0.1` by setting `HOST` for the child server.
 - The renderer has no Node.js integration and runs with context isolation and
   sandboxing enabled.
+- Electron bundles its own Chromium runtime; Google Chrome is not a
+  prerequisite.
+- On Linux development startup, `desktop/dev.js` verifies the bundled
+  `chrome-sandbox` helper and uses PolicyKit (`pkexec`) for one-time
+  administrator authorization when its root ownership and setuid mode are
+  missing. The application does not request elevated permission on every
+  launch.
+- The launcher waits for the Vite development URL before starting Electron,
+  avoiding a renderer load race while port `3000` is still starting.
 - The preload exposes only the desktop API base URL.
 - External links are opened through an explicit allowlisted main-process
   handler.
