@@ -10,7 +10,7 @@ cd "$PROJECT_DIR"
 echo "🚀 Building Docker Manager frontend..."
 
 # Build frontend
-cd frontend/docker-manager
+cd frontend
 npm run build
 
 # Return to project root
@@ -27,4 +27,4 @@ source venv/bin/activate
 
 # Start Flask application
 echo "🌐 Starting Flask application..."
-exec python index.py
+exec python3 index.py
