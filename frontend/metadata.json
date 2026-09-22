@@ -1,6 +1,0 @@
-{
-  "name": "Docker Manager",
-  "description": "A high-performance Docker and container management dashboard built with core UI and UX laws: Hick's, Fitts's, Jakob's, Miller's, Proximity, and Aesthetic-Usability.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
