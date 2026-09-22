@@ -1,72 +1,74 @@
 # Docker Dashboard API
 
-## Overview
+The Docker Dashboard API is implemented by Node.js and Express in
+`server/`. It serves the compiled React frontend and exposes Docker
+container/image operations through a service layer and Docker adapter.
 
-The Docker Dashboard API is a Node.js and Express-based REST API for managing Docker containers and images.
+## Running locally
 
-The API provides endpoints to:
+The default bind address is `0.0.0.0:5000`, configured in
+`application.config.json`.
 
-* List Docker containers
-* List Docker images
-* Fetch container logs
-* Start containers
-* Stop containers
-* Restart containers
-* Remove containers
-* Remove Docker images
-* Remove multiple Docker images
-* Serve the Docker Dashboard frontend and assets
-
-## Base URL
-
-```text
-http://localhost:3000
+```bash
+cd server
+npm install
+npm start
 ```
 
-The host and port are configured through:
+The Docker CLI must be installed and available to the server process.
 
-```text
-application.config.json
-```
+## Response and error contracts
 
-Example:
+Successful legacy and modern endpoints preserve the existing response shapes.
+Errors use:
 
 ```json
 {
-  "host": "0.0.0.0",
-  "port": 3000
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "containerId is required",
+    "details": {
+      "field": "containerId"
+    }
+  }
 }
 ```
 
----
+Error codes include `VALIDATION_ERROR`, `CONTAINER_NOT_FOUND`,
+`IMAGE_NOT_FOUND`, `DOCKER_ERROR`, `DOCKER_UNAVAILABLE`, `FORBIDDEN`,
+`RATE_LIMITED`, and `INTERNAL_ERROR`.
 
-# Endpoints
+Production responses do not include stack traces or raw Docker command output.
+Each response includes an `x-request-id` header for log correlation.
 
-## 1. Get Dashboard
+## Health and readiness
 
-### `GET /`
+### `GET /health`
 
-Returns the configured frontend application.
+Checks that the Node.js process is alive.
 
-### Response
-
-The configured frontend file is returned.
-
-The frontend configuration is loaded from:
-
-```text
-file.config.json
+```json
+{ "status": "ok" }
 ```
 
----
+### `GET /ready`
 
-## 2. Get All Containers
+Checks Docker availability using a Docker adapter ping.
+
+```json
+{ "status": "ready", "docker": "available" }
+```
+
+Docker failures return a structured `DOCKER_UNAVAILABLE` or `DOCKER_ERROR`
+response.
+
+## Backward-compatible endpoints
+
+These endpoints are used by the current React frontend and remain supported.
 
 ### `GET /get/all/containers`
 
-Returns all Docker containers.
-
-### Response
+Returns:
 
 ```json
 [
@@ -80,23 +82,9 @@ Returns all Docker containers.
 ]
 ```
 
-### Empty Response
-
-If there are no containers:
-
-```json
-[]
-```
-
----
-
-# 3. Get All Images
-
 ### `GET /get/all/images`
 
-Returns Docker images available on the Docker host.
-
-### Response
+Returns normalized Docker image records:
 
 ```json
 [
@@ -114,21 +102,9 @@ Returns Docker images available on the Docker host.
 ]
 ```
 
-### Empty Response
-
-```json
-[]
-```
-
----
-
-# 4. Get Container Logs
-
 ### `POST /logs/container`
 
-Returns logs for a Docker container.
-
-### Request Body
+Request:
 
 ```json
 {
@@ -138,345 +114,83 @@ Returns logs for a Docker container.
 }
 ```
 
-### Parameters
+`containerId` is required. `timestamps` must be boolean. `tail` must be an
+integer from 1 through 10000.
 
-| Parameter     | Type    | Required | Default | Description                   |
-| ------------- | ------- | -------: | ------: | ----------------------------- |
-| `containerId` | string  |      Yes |       — | Docker container ID or name   |
-| `timestamps`  | boolean |       No | `false` | Include timestamps in logs    |
-| `tail`        | number  |       No |   `200` | Number of log lines to return |
+### Container actions
 
-### Response
-
-```json
-{
-  "containerId": "abc123",
-  "logs": "Application started...\nServer listening on port 3000\n"
-}
-```
-
-### Validation Error
-
-```json
-{
-  "error": "containerId is required"
-}
-```
-
-HTTP status:
+The following endpoints accept `{ "containerId": "abc123" }`:
 
 ```text
-400 Bad Request
+POST /start/container
+POST /stop/container
+POST /restart/container
+POST /remove/container
 ```
 
-### Docker Error
-
-```json
-{
-  "error": "Failed to fetch container logs",
-  "details": "No such container: abc123"
-}
-```
-
-HTTP status:
+### Image actions
 
 ```text
-500 Internal Server Error
+POST /remove/image       body: { "imageId": "abc123" }
+POST /remove/images      body: { "imageIds": ["abc123", "def456"] }
 ```
 
----
+Image batches are limited to 100 identifiers.
 
-# 5. Stop Container
+## Resource-oriented aliases
 
-### `POST /stop/container`
-
-Stops a running Docker container.
-
-### Request Body
-
-```json
-{
-  "containerId": "abc123"
-}
-```
-
-### Response
-
-```json
-{
-  "message": "Container stopped successfully",
-  "containerId": "abc123",
-  "output": "abc123"
-}
-```
-
----
-
-# 6. Start Container
-
-### `POST /start/container`
-
-Starts a stopped Docker container.
-
-### Request Body
-
-```json
-{
-  "containerId": "abc123"
-}
-```
-
-### Response
-
-```json
-{
-  "message": "Container started successfully",
-  "containerId": "abc123",
-  "output": "abc123"
-}
-```
-
----
-
-# 7. Restart Container
-
-### `POST /restart/container`
-
-Restarts a Docker container.
-
-### Request Body
-
-```json
-{
-  "containerId": "abc123"
-}
-```
-
-### Response
-
-```json
-{
-  "message": "Container restarted successfully",
-  "containerId": "abc123",
-  "output": "abc123"
-}
-```
-
----
-
-# 8. Remove Container
-
-### `POST /remove/container`
-
-Removes a Docker container.
-
-### Request Body
-
-```json
-{
-  "containerId": "abc123"
-}
-```
-
-### Response
-
-```json
-{
-  "message": "Container stopped successfully",
-  "containerId": "abc123",
-  "output": "abc123"
-}
-```
-
-> Note: The current implementation uses `docker rm`, so the container must satisfy Docker's normal removal requirements.
-
----
-
-# 9. Remove Image
-
-### `POST /remove/image`
-
-Removes a Docker image.
-
-### Request Body
-
-```json
-{
-  "imageId": "abc123"
-}
-```
-
-### Response
-
-```json
-{
-  "message": "Container stopped successfully",
-  "imageId": "abc123",
-  "output": "Untagged: nginx:latest"
-}
-```
-
-### Validation Error
-
-```json
-{
-  "error": "imageId is required and must be a string"
-}
-```
-
-HTTP status:
+The following routes provide a clearer API for new consumers without breaking
+the legacy frontend:
 
 ```text
-400 Bad Request
+GET    /api/containers
+GET    /api/images
+GET    /api/containers/:id/logs
+POST   /api/containers/:id/start
+POST   /api/containers/:id/stop
+POST   /api/containers/:id/restart
+DELETE /api/containers/:id
+DELETE /api/images/:id
 ```
 
----
+The logs alias accepts `timestamps=true|false` and `tail` as query parameters.
+Identifiers are strictly validated before reaching the Docker adapter.
 
-# 10. Remove Multiple Images
-
-### `POST /remove/images`
-
-Removes multiple Docker images in one request.
-
-### Request Body
-
-```json
-{
-  "imageIds": [
-    "abc123",
-    "def456"
-  ]
-}
-```
-
-### Response
-
-```json
-{
-  "message": "Images removed successfully",
-  "imageIds": [
-    "abc123",
-    "def456"
-  ],
-  "output": "Untagged: image-one\nUntagged: image-two"
-}
-```
-
-### Validation Error
-
-```json
-{
-  "error": "imageIds is required and must be a list"
-}
-```
-
-HTTP status:
+## Static frontend
 
 ```text
-400 Bad Request
+GET /
+GET /assets/*
 ```
 
----
+The frontend directory and entry file are configured by `file.config.json`.
 
-# Error Handling
+## Configuration
 
-Common HTTP statuses:
+Deployment-specific values may be supplied with environment variables:
 
-| Status | Meaning                         |
-| ------ | ------------------------------- |
-| `200`  | Request completed successfully  |
-| `400`  | Invalid or missing request data |
-| `500`  | Docker command or server error  |
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `NODE_ENV` | `development`, `test`, or `production` | `development` |
+| `HOST` | API bind host | `application.config.json` |
+| `PORT` | API bind port | `application.config.json` |
+| `JSON_LIMIT` | Maximum JSON request body | `100kb` |
+| `DOCKER_TIMEOUT_MS` | Docker command timeout | `30000` |
+| `DOCKER_MAX_BUFFER` | Maximum command output buffer | `1048576` |
+| `CORS_ORIGINS` | Comma-separated allowed origins; empty allows local compatibility | empty |
+| `RATE_LIMIT_WINDOW_MS` | Rate-limit window | `60000` |
+| `RATE_LIMIT_MAX` | Requests per window and IP | `120` |
 
-Example:
+`command.config.json` contains the trusted Docker listing commands. User
+input is never passed through a shell; Docker commands use argument arrays.
 
-```json
-{
-  "error": "containerId is required"
-}
-```
+## Security and deployment
 
----
+The API is a privileged Docker control plane. Production deployments should
+place it behind an HTTPS reverse proxy with authentication and authorization,
+restrict network exposure, configure an explicit `CORS_ORIGINS` allowlist, and
+run the process with least-privilege Docker access.
 
-# Docker Commands Used
-
-The API executes Docker CLI commands through Node.js.
-
-| API              | Docker command                              |
-| ---------------- | ------------------------------------------- |
-| Get containers   | Configured Docker container listing command |
-| Get images       | Configured Docker image listing command     |
-| Logs             | `docker logs`                               |
-| Stop             | `docker stop`                               |
-| Start            | `docker start`                              |
-| Restart          | `docker restart`                            |
-| Remove container | `docker rm`                                 |
-| Remove image     | `docker rmi`                                |
-
----
-
-# Configuration Files
-
-The server expects these configuration files:
-
-```text
-command.config.json
-application.config.json
-file.config.json
-```
-
-### `application.config.json`
-
-Controls server host and port.
-
-```json
-{
-  "host": "0.0.0.0",
-  "port": 3000
-}
-```
-
-### `file.config.json`
-
-Controls the frontend directory and entry file.
-
-Example:
-
-```json
-{
-  "directory": "../frontend",
-  "file": "index.html"
-}
-```
-
-### `command.config.json`
-
-Contains the Docker commands used to retrieve container and image information.
-
----
-
-# Running the API
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Start the server:
-
-```bash
-npm start
-```
-
-Development mode:
-
-```bash
-npm run dev
-```
-
-Example:
-
-```text
-Server running at http://0.0.0.0:3000
-```
+Authentication, RBAC, and audit persistence are architecture targets but are
+not enabled by default so local development remains simple. Do not expose the
+Docker socket or this API directly to untrusted networks.

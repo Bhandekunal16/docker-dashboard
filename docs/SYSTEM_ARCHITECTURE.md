@@ -8,14 +8,20 @@ with a Node.js and Express REST API. The API delegates Docker operations to a
 service layer, which uses a Docker adapter to communicate with the Docker CLI
 and Docker Engine.
 
+Node.js and Express are the only backend implementation currently present in
+the repository. The architecture does not maintain a second Flask runtime;
+API compatibility is preserved through the existing legacy routes and the
+additive `/api/*` routes.
+
 The architecture is intentionally incremental:
 
 - The current backend keeps route wiring in `server/index.js`.
-- The current Docker-facing implementation is in `server/docker_help.js`.
+- The Docker-facing implementation is in `server/docker/adapter.js`.
 - Routes, controllers, services, middleware, errors, configuration, and Docker
   adapter modules are logical boundaries for continued extraction as the
   backend grows.
 - Existing endpoint compatibility takes priority over a large rewrite.
+- `docs/openapi.yaml` describes the legacy and resource-oriented API contract.
 
 ## 2. High-level architecture
 
@@ -119,9 +125,9 @@ CLI argument syntax, or Express response objects.
 
 ### 3.4 Docker adapter
 
-The current implementation in `server/docker_help.js` is the Docker-facing
-boundary. It uses `execFileSync` with argument arrays, which avoids shell
-interpolation. The adapter boundary should be preserved so Docker CLI
+The implementation in `server/docker/adapter.js` is the Docker-facing
+boundary. It uses asynchronous `execFile` with argument arrays, which avoids
+shell interpolation. The adapter boundary should be preserved so Docker CLI
 execution can later be replaced with the Docker Engine API or an SDK without
 changing controllers or frontend API contracts.
 
@@ -426,10 +432,11 @@ docker-dashboard/
 ├── file.config.json                     # Frontend serving configuration
 ├── docs/
 │   ├── API.md                           # Existing endpoint reference
+│   ├── openapi.yaml                     # API contract source of truth
 │   └── SYSTEM_ARCHITECTURE.md           # This document
 ├── server/
 │   ├── index.js                         # Express app and current route wiring
-│   ├── docker_help.js                   # Current Docker adapter boundary
+│   ├── docker/adapter.js                # Docker CLI adapter
 │   ├── routes/                          # Future extracted route modules
 │   ├── controllers/                     # Future HTTP controllers
 │   ├── services/                        # Future dashboard services

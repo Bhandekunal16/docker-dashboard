@@ -1,6 +1,6 @@
 # Docker Dashboard — Node.js
 
-A lightweight Docker management dashboard backend built with **Node.js** and **Express**.
+A lightweight Docker management dashboard built with **React**, **Node.js**, and **Express**.
 
 The server provides REST APIs for viewing and managing Docker containers and images and also serves the Docker Dashboard frontend.
 
@@ -32,12 +32,14 @@ The server provides REST APIs for viewing and managing Docker containers and ima
 ```text
 server/
 ├── index.js
-├── docker_help.js
-├── package.json
-├── command.config.json
-├── application.config.json
-├── file.config.json
-└── ...
+├── app.js
+├── config.js
+├── docker/adapter.js
+├── services/dashboard.js
+├── middleware.js
+├── errors.js
+├── test/
+└── package.json
 ```
 
 ## Installation
@@ -119,7 +121,7 @@ npm run dev
 The default server address is:
 
 ```text
-http://localhost:3000
+http://localhost:5000
 ```
 
 ## API Endpoints
@@ -160,19 +162,19 @@ Static assets:
 ### Get containers
 
 ```bash
-curl http://localhost:3000/get/all/containers
+curl http://localhost:5000/get/all/containers
 ```
 
 ### Get images
 
 ```bash
-curl http://localhost:3000/get/all/images
+curl http://localhost:5000/get/all/images
 ```
 
 ### Start container
 
 ```bash
-curl -X POST http://localhost:3000/start/container \
+curl -X POST http://localhost:5000/start/container \
   -H "Content-Type: application/json" \
   -d '{"containerId":"abc123"}'
 ```
@@ -180,7 +182,7 @@ curl -X POST http://localhost:3000/start/container \
 ### Stop container
 
 ```bash
-curl -X POST http://localhost:3000/stop/container \
+curl -X POST http://localhost:5000/stop/container \
   -H "Content-Type: application/json" \
   -d '{"containerId":"abc123"}'
 ```
@@ -188,7 +190,7 @@ curl -X POST http://localhost:3000/stop/container \
 ### Restart container
 
 ```bash
-curl -X POST http://localhost:3000/restart/container \
+curl -X POST http://localhost:5000/restart/container \
   -H "Content-Type: application/json" \
   -d '{"containerId":"abc123"}'
 ```
@@ -196,7 +198,7 @@ curl -X POST http://localhost:3000/restart/container \
 ### Container logs
 
 ```bash
-curl -X POST http://localhost:3000/logs/container \
+curl -X POST http://localhost:5000/logs/container \
   -H "Content-Type: application/json" \
   -d '{
     "containerId": "abc123",
@@ -208,7 +210,7 @@ curl -X POST http://localhost:3000/logs/container \
 ### Remove container
 
 ```bash
-curl -X POST http://localhost:3000/remove/container \
+curl -X POST http://localhost:5000/remove/container \
   -H "Content-Type: application/json" \
   -d '{"containerId":"abc123"}'
 ```
@@ -216,7 +218,7 @@ curl -X POST http://localhost:3000/remove/container \
 ### Remove image
 
 ```bash
-curl -X POST http://localhost:3000/remove/image \
+curl -X POST http://localhost:5000/remove/image \
   -H "Content-Type: application/json" \
   -d '{"imageId":"abc123"}'
 ```
@@ -224,7 +226,7 @@ curl -X POST http://localhost:3000/remove/image \
 ### Remove multiple images
 
 ```bash
-curl -X POST http://localhost:3000/remove/images \
+curl -X POST http://localhost:5000/remove/images \
   -H "Content-Type: application/json" \
   -d '{
     "imageIds": [
@@ -238,27 +240,32 @@ curl -X POST http://localhost:3000/remove/images \
 
 The application is separated into two main responsibilities.
 
-### `index.js`
+### `server/index.js` and `server/app.js`
 
 Responsible for:
 
-* Express application setup
-* CORS
-* JSON parsing
-* API routes
+* Express startup and application composition
+* Middleware and route registration
+* Health/readiness endpoints
+* Backward-compatible and resource-oriented API routes
 * Frontend serving
-* Request validation
 
-### `docker_help.js`
+### `server/services/dashboard.js`
 
 Responsible for:
 
-* Executing Docker commands
-* Loading JSON configuration
-* Formatting API responses
-* Container operations
-* Image operations
-* Container log retrieval
+* Container and image domain operations
+* Input validation
+* Mapping Docker records to API response shapes
+
+### `server/docker/adapter.js`
+
+Responsible for:
+
+* Executing Docker commands with argument arrays
+* Command timeouts and bounded output
+* Docker error normalization
+* Keeping Docker CLI details out of routes and services
 
 The Docker CLI is executed using Node.js `child_process`.
 

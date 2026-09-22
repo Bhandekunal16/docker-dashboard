@@ -1,0 +1,323 @@
+openapi: 3.0.3
+info:
+  title: Docker Dashboard API
+  version: 1.0.0
+  description: Backward-compatible Docker container and image management API.
+servers:
+  - url: http://localhost:5000
+paths:
+  /health:
+    get:
+      summary: Check API liveness
+      responses:
+        "200":
+          description: API process is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /ready:
+    get:
+      summary: Check Docker readiness
+      responses:
+        "200":
+          description: Docker is available
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  docker:
+                    type: string
+                    example: available
+        "503":
+          $ref: "#/components/responses/DockerUnavailable"
+  /get/all/containers:
+    get:
+      summary: List all containers
+      responses:
+        "200":
+          $ref: "#/components/responses/Containers"
+        "502":
+          $ref: "#/components/responses/DockerError"
+  /get/all/images:
+    get:
+      summary: List all images
+      responses:
+        "200":
+          $ref: "#/components/responses/Images"
+        "502":
+          $ref: "#/components/responses/DockerError"
+  /logs/container:
+    post:
+      summary: Get container logs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogsRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Logs"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /start/container:
+    post:
+      $ref: "#/paths/~1api~1containers~1{id}~1start/post"
+  /stop/container:
+    post:
+      $ref: "#/paths/~1api~1containers~1{id}~1stop/post"
+  /restart/container:
+    post:
+      $ref: "#/paths/~1api~1containers~1{id}~1restart/post"
+  /remove/container:
+    post:
+      $ref: "#/paths/~1api~1containers~1{id}/delete"
+  /remove/image:
+    post:
+      summary: Remove one image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imageId]
+              properties:
+                imageId:
+                  $ref: "#/components/schemas/Identifier"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+  /remove/images:
+    post:
+      summary: Remove multiple images
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imageIds]
+              properties:
+                imageIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    $ref: "#/components/schemas/Identifier"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+  /api/containers:
+    get:
+      summary: List all containers
+      responses:
+        "200":
+          $ref: "#/components/responses/Containers"
+  /api/images:
+    get:
+      summary: List all images
+      responses:
+        "200":
+          $ref: "#/components/responses/Images"
+  /api/containers/{id}/logs:
+    get:
+      summary: Get container logs
+      parameters:
+        - $ref: "#/components/parameters/ContainerId"
+        - name: timestamps
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: tail
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 200
+      responses:
+        "200":
+          $ref: "#/components/responses/Logs"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/containers/{id}/start:
+    post:
+      summary: Start a container
+      parameters:
+        - $ref: "#/components/parameters/ContainerId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/containers/{id}/stop:
+    post:
+      summary: Stop a container
+      parameters:
+        - $ref: "#/components/parameters/ContainerId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/containers/{id}/restart:
+    post:
+      summary: Restart a container
+      parameters:
+        - $ref: "#/components/parameters/ContainerId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/containers/{id}:
+    delete:
+      summary: Remove a container
+      parameters:
+        - $ref: "#/components/parameters/ContainerId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/images/{id}:
+    delete:
+      summary: Remove an image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Identifier"
+      responses:
+        "200":
+          $ref: "#/components/responses/Action"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    ContainerId:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+  schemas:
+    Identifier:
+      type: string
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}$"
+    Container:
+      type: object
+      properties:
+        container_id: { type: string }
+        image: { type: string }
+        status: { type: string }
+        ports: { type: string }
+        name: { type: string }
+    Image:
+      type: object
+      additionalProperties: true
+    LogsRequest:
+      type: object
+      required: [containerId]
+      properties:
+        containerId:
+          $ref: "#/components/schemas/Identifier"
+        timestamps:
+          type: boolean
+          default: false
+        tail:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 200
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object }
+    Action:
+      type: object
+      additionalProperties: true
+  responses:
+    Containers:
+      description: Container list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Container"
+    Images:
+      description: Image list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Image"
+    Logs:
+      description: Container logs
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              containerId: { type: string }
+              logs: { type: string }
+    Action:
+      description: Successful Docker operation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Action"
+    ValidationError:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Docker resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    DockerError:
+      description: Docker operation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    DockerUnavailable:
+      description: Docker is unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
