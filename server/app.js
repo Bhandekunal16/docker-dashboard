@@ -44,6 +44,9 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
   });
 
   app.use("/assets", express.static(path.join(config.frontend.directory, "assets")));
+  app.get("/favicon.svg", (req, res) =>
+    res.sendFile(path.join(config.frontend.directory, "favicon.svg")),
+  );
   app.get("/", (req, res) =>
     res.sendFile(path.join(config.frontend.directory, config.frontend.file)),
   );
