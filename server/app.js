@@ -3,6 +3,11 @@ const express = require("express");
 const { getConfig } = require("./config");
 const { DockerAdapter } = require("./docker/adapter");
 const { DashboardService } = require("./services/dashboard");
+const {
+  getCpuUsage,
+  getMemoryUsage,
+  getDiskUsage,
+} = require("./services/host-resources");
 const { validationError } = require("./errors");
 const {
   corsPolicy,
@@ -34,6 +39,21 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
   };
 
   app.get("/health", (req, res) => res.json({ status: "ok" }));
+  app.get("/api/host/cpu", async (req, res, next) => {
+    try {
+      return res.json(await getCpuUsage());
+    } catch (error) {
+      return next(error);
+    }
+  });
+  app.get("/api/host/memory", (req, res) => res.json(getMemoryUsage()));
+  app.get("/api/host/disk", async (req, res, next) => {
+    try {
+      return res.json(await getDiskUsage());
+    } catch (error) {
+      return next(error);
+    }
+  });
   app.get("/ready", async (req, res, next) => {
     try {
       await dockerAdapter.ping();
