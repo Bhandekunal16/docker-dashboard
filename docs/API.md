@@ -62,6 +62,53 @@ Checks Docker availability using a Docker adapter ping.
 Docker failures return a structured `DOCKER_UNAVAILABLE` or `DOCKER_ERROR`
 response.
 
+## Host resources
+
+These endpoints provide live host telemetry for the React dashboard. The
+frontend polls them every four seconds for the Host Resources Overview.
+
+### `GET /api/host/cpu`
+
+Returns the host CPU utilization since the previous sample:
+
+```json
+{
+  "usagePercent": 24.8,
+  "cores": 8
+}
+```
+
+### `GET /api/host/memory`
+
+Returns host memory totals in bytes and the percentage currently in use:
+
+```json
+{
+  "totalBytes": 24931823616,
+  "usedBytes": 13022199808,
+  "freeBytes": 11909623808,
+  "usagePercent": 52.2
+}
+```
+
+### `GET /api/host/disk`
+
+Returns usage for the server's root filesystem (`/`):
+
+```json
+{
+  "mount": "/",
+  "totalBytes": 502392610816,
+  "usedBytes": 243969134592,
+  "freeBytes": 232828104704,
+  "usagePercent": 52
+}
+```
+
+CPU and memory are read from the Node.js host process. Disk usage is read from
+the host filesystem using `df`. These endpoints report host-level values, not
+per-container Docker statistics.
+
 ## Backward-compatible endpoints
 
 These endpoints are used by the current React frontend and remain supported.
