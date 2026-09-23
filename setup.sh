@@ -5,7 +5,7 @@ cd docker-dashboard &&
 npm i --f
 
 
-# run app .. through out
+# run app .. through out ..
 
 # ./runner.sh desktop   # Requests one-time sandbox permission through pkexec
 # ./runner.sh web       # Start backend only
