@@ -1,7 +1,7 @@
 const path = require("path");
 const express = require("express");
 const { getConfig } = require("./config");
-const cors = require('cors')
+const cors = require("cors");
 const { DockerAdapter } = require("./docker/adapter");
 const { DashboardService } = require("./services/dashboard");
 const {
@@ -10,12 +10,7 @@ const {
   getDiskUsage,
 } = require("./services/host-resources");
 const { validationError } = require("./errors");
-const {
-  corsPolicy,
-  errorHandler,
-  rateLimit,
-  requestContext,
-} = require("./middleware");
+const { errorHandler, rateLimit, requestContext } = require("./middleware");
 
 function createApp({ config = getConfig(), adapter, logger = console } = {}) {
   const app = express();
@@ -29,7 +24,7 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
 
   app.disable("x-powered-by");
   app.use(requestContext(logger));
-  app.use(cors())
+  app.use(cors());
   app.use(express.json({ limit: config.server.jsonLimit }));
   app.use(rateLimit(config.security));
 
@@ -64,7 +59,10 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
     }
   });
 
-  app.use("/assets", express.static(path.join(config.frontend.directory, "assets")));
+  app.use(
+    "/assets",
+    express.static(path.join(config.frontend.directory, "assets")),
+  );
   app.get("/favicon.svg", (req, res) =>
     res.sendFile(path.join(config.frontend.directory, "favicon.svg")),
   );
@@ -119,7 +117,9 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
 
   app.post("/remove/image", async (req, res, next) => {
     try {
-      return res.json(await service.removeImage(requireId(getBody(req).imageId, "imageId")));
+      return res.json(
+        await service.removeImage(requireId(getBody(req).imageId, "imageId")),
+      );
     } catch (error) {
       return next(error);
     }
@@ -148,10 +148,12 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
   });
   app.get("/api/containers/:id/logs", async (req, res, next) => {
     try {
-      return res.json(await service.getContainerLogs(req.params.id, {
-        timestamps: req.query.timestamps === "true",
-        tail: req.query.tail === undefined ? 200 : Number(req.query.tail),
-      }));
+      return res.json(
+        await service.getContainerLogs(req.params.id, {
+          timestamps: req.query.timestamps === "true",
+          tail: req.query.tail === undefined ? 200 : Number(req.query.tail),
+        }),
+      );
     } catch (error) {
       return next(error);
     }
@@ -190,7 +192,9 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
     if (req.path === "/favicon.ico") {
       return res.sendFile(path.join(config.frontend.directory, "favicon.ico"));
     }
-    return res.sendFile(path.join(config.frontend.directory, config.frontend.file));
+    return res.sendFile(
+      path.join(config.frontend.directory, config.frontend.file),
+    );
   });
   app.use(errorHandler(config, logger));
   return { app, service, dockerAdapter };
