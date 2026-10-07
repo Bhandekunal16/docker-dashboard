@@ -29,7 +29,6 @@ function createApp({ config = getConfig(), adapter, logger = console } = {}) {
 
   app.disable("x-powered-by");
   app.use(requestContext(logger));
-  // app.use(corsPolicy(config.security.corsOrigins));
   app.use(cors())
   app.use(express.json({ limit: config.server.jsonLimit }));
   app.use(rateLimit(config.security));
